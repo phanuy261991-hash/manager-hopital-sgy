@@ -1,0 +1,2332 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Quản Lý Điều Hành - Saigon Young</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+    <!-- MÀN HÌNH 1: CẤU HÌNH FILE JSON -->
+    <div id="json-screen" class="card screen active">
+        <div class="logo-container">
+            <img src="img/Logo Không Nền.png" alt="Saigon Young Logo" class="logo-img-large">
+        </div>
+        <h2>HỆ THỐNG ĐIỀU HÀNH DOANH NGHIỆP</h2>
+        
+        <div id="reconnect-section" style="display:none; margin-bottom: 15px; padding: 12px; background: #fbead0; border: 1px dashed var(--bronze); border-radius: 6px;">
+            <p style="font-size: 14px; margin-bottom: 10px; font-weight: 500;">Phát hiện phiên làm việc trước đó.</p>
+            <div id="reconnect-buttons"><button disabled>Đang kiểm tra tham chiếu file lưu trữ...</button></div>
+            <p style="font-size: 11px; color: #777; margin-top: 5px;" id="reconnect-note">*(Đang kiểm tra khả năng đồng bộ file JSON trên máy)*</p>
+            <hr style="margin: 12px 0; border: 0; border-top: 1px dashed var(--gold);">
+        </div>
+
+        <button class="secondary" onclick="handleCreateNewJsonWithAPI()">Khởi Tạo File Lưu Trữ ERP Mới</button>
+        <button onclick="handleLoadJsonWithAPI()">Chọn File JSON ERP Hiện Có Từ Máy</button>
+        <p style="font-size: 11px; color: #8b0000; margin-top: 15px; text-align: left; line-height: 1.4;">
+            * Quyền trình duyệt: Hãy bấm <strong>"Allow/Cho phép"</strong> nếu có hộp thoại xuất hiện để kích hoạt cơ chế tự động ghi dữ liệu trực tiếp vào file.
+        </p>
+        <div class="app-copyright">© Bản quyền thuộc về Bệnh Viện Thẩm Mỹ SaiGon Young — Phiên bản 1.0</div>
+    </div>
+
+    <!-- MÀN HÌNH 2: ĐĂNG NHẬP (HỖ TRỢ ADMIN & NHÂN VIÊN) -->
+    <div id="login-screen" class="card screen">
+        <div class="logo-container">
+            <img src="img/Logo Không Nền.png" alt="Saigon Young Logo" class="logo-img-large">
+        </div>
+        <h2>ĐĂNG NHẬP HỆ THỐNG ĐIỀU HÀNH</h2>
+        <input type="text" id="username" placeholder="Tên đăng nhập (admin hoặc tài khoản nhân viên)">
+        <input type="password" id="password" placeholder="Mật khẩu">
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin-bottom:14px; font-weight:500; font-size:13px;">
+            <input type="checkbox" id="remember-login" style="width:auto; margin:0; cursor:pointer;">
+            <span>Ghi nhớ đăng nhập cho lần sau</span>
+        </label>
+        <button onclick="handleLogin()">Đăng Nhập Hệ Thống</button>
+        <button class="secondary" onclick="backToJsonScreen()">Quay Lại</button>
+        <div class="app-copyright">© Bản quyền thuộc về Bệnh Viện Thẩm Mỹ SaiGon Young — Phiên bản 1.0</div>
+    </div>
+
+    <!-- MÀN HÌNH 3: GIAO DIỆN CHÍNH ERP (APP SHELL: SIDEBAR TRÁI CỐ ĐỊNH TOÀN CHIỀU CAO + CỘT PHẢI HEADER/NỘI DUNG) -->
+    <div id="main-screen" class="screen">
+
+        <!-- MENU SIDEBAR BÊN TRÁI: THƯƠNG HIỆU (TRÊN) / MENU CUỘN (GIỮA) / HỒ SƠ NGƯỜI DÙNG (DƯỚI) -->
+        <div class="sidebar-tabs" id="main-sidebar-menu">
+            <div class="sidebar-brand">
+                <img src="img/Logo Không Nền.png" alt="Saigon Young Logo" class="sidebar-brand-logo">
+            </div>
+
+            <div class="sidebar-nav-scroll">
+                <!-- Phân đoạn quản trị cốt lõi (Chỉ Admin thấy hoặc người được phân quyền) -->
+                <div class="sidebar-group" id="menu-group-admin">
+                    <div class="sidebar-title">⚙️ Quản trị hệ thống</div>
+                    <div class="tab-item active-tab" data-target="tab-nhan-vien" onclick="switchPanel(this)">👤 Danh sách nhân viên</div>
+                    <div class="tab-item" data-target="tab-vai-tro" onclick="switchPanel(this)">🎖️ Quản lý vai trò & Quyền</div>
+                    <div class="tab-item" data-target="tab-phong-ban" onclick="switchPanel(this)">🏢 Danh sách phòng ban</div>
+                    <div class="tab-item" data-target="tab-dich-vu" onclick="switchPanel(this)">📋 Danh sách dịch vụ</div>
+                    <div class="tab-item" data-target="tab-nguon-khach" onclick="switchPanel(this)">🌐 Danh sách nguồn khách hàng</div>
+                    <div class="tab-item" data-target="tab-nhom-loai-van-ban" onclick="switchPanel(this)">📁 Danh sách nhóm loại văn bản</div>
+                    <div class="tab-item" data-target="tab-loai-van-ban" onclick="switchPanel(this)">📄 Danh sách loại văn bản</div>
+                    <div class="tab-item" data-target="tab-cau-hinh-ma" onclick="switchPanel(this)">🔢 Cấu hình mã phát sinh</div>
+                    <div class="tab-item" data-target="tab-nhat-ky" onclick="switchPanel(this)">📋 Nhật Ký Hoạt Động</div>
+                </div>
+
+                <!-- Phân đoạn Nghiệp vụ/Chức năng tác nghiệp (Phân quyền động) -->
+                <div class="sidebar-group">
+                    <div class="sidebar-title">💼 Phân hệ chức năng</div>
+                    <div class="tab-item tab-parent-item" id="menu-item-le-tan" onclick="toggleSubMenu('submenu-le-tan', this)" style="display: none;">
+                        <span>🛎️ Nhập liệu Lễ tân</span>
+                        <span class="submenu-caret">▸</span>
+                    </div>
+                    <div class="submenu-wrap" id="submenu-le-tan">
+                        <div class="tab-item sub-tab-item" id="menu-item-dashboard-letan" data-target="tab-dashboard-letan" onclick="switchPanel(this)" style="display: none;">📊 Dashboard Lễ Tân</div>
+                        <div class="tab-item sub-tab-item" id="menu-item-crm-data" data-target="tab-crm-data" onclick="switchPanel(this)" style="display: none;">📥 Danh sách Data</div>
+                        <div class="tab-item sub-tab-item" id="menu-item-dat-lich-hen" data-target="tab-dat-lich-hen" onclick="switchPanel(this)" style="display: none;">📅 Đặt lịch hẹn tư vấn</div>
+                        <div class="tab-item sub-tab-item" id="menu-item-tai-kham" data-target="tab-tai-kham" onclick="switchPanel(this)" style="display: none;">🩹 Đặt lịch tái khám, thay băng, cắt chỉ</div>
+                        <div class="tab-item sub-tab-item" id="menu-item-lich-phau-thuat" data-target="tab-lich-phau-thuat" onclick="switchPanel(this)" style="display: none;">🏥 Danh sách lịch phẫu thuật</div>
+                    </div>
+                    <div class="tab-item tab-parent-item" id="menu-item-crm" onclick="toggleSubMenu('submenu-crm', this)" style="display: none;">
+                        <span>📇 CRM</span>
+                        <span class="submenu-caret">▸</span>
+                    </div>
+                    <div class="submenu-wrap" id="submenu-crm">
+                        <div class="tab-item sub-tab-item" id="menu-item-crm-khach-hang" data-target="tab-crm-khach-hang" onclick="switchPanel(this)" style="display: none;">🧑‍🤝‍🧑 Danh sách khách hàng</div>
+                    </div>
+                    <div class="tab-item tab-parent-item" id="menu-item-ke-toan" onclick="toggleSubMenu('submenu-ke-toan', this)" style="display: none;">
+                        <span>👥 Hành Chính Nhân Sự</span>
+                        <span class="submenu-caret">▸</span>
+                    </div>
+                    <div class="submenu-wrap" id="submenu-ke-toan">
+                        <div class="tab-item sub-tab-item" id="menu-item-quan-ly-van-ban" data-target="tab-quan-ly-van-ban" onclick="switchPanel(this)" style="display: none;">📑 Quản Lý Văn Bản</div>
+                        <div class="tab-item sub-tab-item" id="menu-item-quan-ly-cme" data-target="tab-quan-ly-cme" onclick="switchPanel(this)" style="display: none;">🎓 Quản Lý CME</div>
+                    </div>
+                    <div class="tab-item tab-parent-item" id="menu-item-khoa-duoc" onclick="toggleSubMenu('submenu-khoa-duoc', this)" style="display: none;">
+                        <span>💊 Quản Lý Khoa Dược</span>
+                        <span class="submenu-caret">▸</span>
+                    </div>
+                    <div class="submenu-wrap" id="submenu-khoa-duoc">
+                        <div class="tab-item sub-tab-item" id="menu-item-nha-cung-cap" data-target="tab-nha-cung-cap" onclick="switchPanel(this)" style="display: none;">🚚 Danh mục nhà cung cấp</div>
+                        <div class="tab-item sub-tab-item" id="menu-item-nha-san-xuat" data-target="tab-nha-san-xuat" onclick="switchPanel(this)" style="display: none;">🏭 Danh mục nhà sản xuất</div>
+                        <div class="tab-item sub-tab-item" id="menu-item-don-vi-tinh" data-target="tab-don-vi-tinh" onclick="switchPanel(this)" style="display: none;">📏 Danh mục đơn vị tính</div>
+                        <div class="tab-item sub-tab-item" id="menu-item-nhap-lieu-kho-thuoc" data-target="tab-nhap-lieu-kho-thuoc" onclick="switchPanel(this)" style="display: none;">💊 Thuốc và Tồn kho</div>
+                        <div class="tab-item sub-tab-item" id="menu-item-phieu-kho" data-target="tab-phieu-kho" onclick="switchPanel(this)" style="display: none;">📋 Phiếu xuất / nhập kho</div>
+                    </div>
+                    <div class="tab-item" id="menu-item-ky-thuat" data-target="tab-ky-thuat" onclick="switchPanel(this)" style="display: none;">🔧 Thao tác Kỹ thuật</div>
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <div id="current-file-name-display" class="sidebar-file-info" title=""></div>
+                <div class="sidebar-user">
+                    <span class="avatar-circle" id="sidebar-user-avatar" style="background:var(--primary); width:36px; height:36px; font-size:13px; flex-shrink:0;">AD</span>
+                    <div class="sidebar-user-info">
+                        <div class="sidebar-user-name" id="current-user-info">Xin chào: Admin</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CỘT PHẢI: HEADER-BAR (TRÊN) + NỘI DUNG (DƯỚI) -->
+        <div class="workspace-container">
+            <div class="header-bar">
+                <div class="app-software-label">Phần Mềm Quản Trị Điều Hành</div>
+
+                <div class="action-group">
+                    <button class="secondary" style="border-color: var(--bronze);" id="btn-reload-data" onclick="reloadLatestDataFromFile()">🔄 Tải Dữ Liệu Mới Nhất</button>
+                    <div id="sync-status" class="status-badge">Tự Động Lưu File</div>
+                    <button class="secondary" style="border-color: #ef6c00; color: #ef6c00; display:none;" id="btn-link-file" onclick="linkExistingFileToSession()">🔗 Kết Nối Lưu File</button>
+                    <button class="secondary" style="border-color: var(--bronze);" id="btn-admin-pwd" onclick="openPasswordModal()">🔒 Đổi Mật Khẩu Admin</button>
+                    <button class="secondary" style="border-color: #ccc;" onclick="logout()">Đăng Xuất</button>
+                </div>
+            </div>
+
+            <!-- KHU VỰC HIỂN THỊ NỘI DUNG BÊN PHẢI -->
+            <div class="content-area">
+                
+                <!-- ================= TAB 1: NHÂN VIÊN ================= -->
+                <div id="tab-nhan-vien" class="tab-content-panel panel-active">
+                    <div class="panel-action-bar">
+                        <div class="search-box-wrapper">
+                            <span class="search-icon-inside">🔍</span>
+                            <input type="text" id="search-nv" class="search-input" placeholder="Tìm nhân viên theo tên, mã hoặc tài khoản..." oninput="handleSearchData()">
+                        </div>
+                        <button type="button" class="secondary" style="width:auto; margin:0; border-color:#2e7d32; color:#2e7d32;" onclick="exportConfigToExcel('nhanvien')">📊 Xuất Excel</button>
+                        <button type="button" class="secondary" style="width:auto; margin:0; border-color:#1565c0; color:#1565c0;" onclick="openImportModal('nhanvien')">📥 Nhập Excel</button>
+                        <button style="width: auto; margin:0;" onclick="openNhanVienModal('add')">+ Thêm Nhân Viên</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Mã NV</th>
+                                    <th>Họ Và Tên</th>
+                                    <th>Phòng Ban</th>
+                                    <th>Vai Trò / Chức Vụ</th>
+                                    <th>Tài Khoản Đăng Nhập</th>
+                                    <th style="width: 150px; text-align: center;">Thao Tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="body-nhan-vien"></tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-bar" id="page-bar-nv">
+                        <div class="pagination-info" id="info-nv"></div>
+                        <div class="pagination-buttons" id="btn-nv"></div>
+                    </div>
+                </div>
+
+                <!-- ================= TAB 2: VAI TRÒ & PHÂN QUYỀN ================= -->
+                <div id="tab-vai-tro" class="tab-content-panel">
+                    <div class="panel-action-bar">
+                        <div class="search-box-wrapper">
+                            <span class="search-icon-inside">🔍</span>
+                            <input type="text" id="search-vt" class="search-input" placeholder="Tìm kiếm vai trò chức vụ..." oninput="handleSearchData()">
+                        </div>
+                        <button type="button" class="secondary" style="width:auto; margin:0; border-color:#2e7d32; color:#2e7d32;" onclick="exportConfigToExcel('vaitro')">📊 Xuất Excel</button>
+                        <button type="button" class="secondary" style="width:auto; margin:0; border-color:#1565c0; color:#1565c0;" onclick="openImportModal('vaitro')">📥 Nhập Excel</button>
+                        <button style="width: auto; margin:0;" onclick="openVaiTroModal('add')">+ Thêm Vai Trò</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Tên Vai Trò</th>
+                                    <th>Mã Vai Trò</th>
+                                    <th>Quyền Hạn Được Cấp</th>
+                                    <th style="width: 150px; text-align: center;">Thao Tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="body-vai-tro"></tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-bar" id="page-bar-vt">
+                        <div class="pagination-info" id="info-vt"></div>
+                        <div class="pagination-buttons" id="btn-vt"></div>
+                    </div>
+                </div>
+
+                <!-- ================= TAB 3: PHÒNG BAN ================= -->
+                <div id="tab-phong-ban" class="tab-content-panel">
+                    <div class="panel-action-bar">
+                        <div class="search-box-wrapper">
+                            <span class="search-icon-inside">🔍</span>
+                            <input type="text" id="search-pb" class="search-input" placeholder="Tìm kiếm phòng ban..." oninput="handleSearchData()">
+                        </div>
+                        <button type="button" class="secondary" style="width:auto; margin:0; border-color:#2e7d32; color:#2e7d32;" onclick="exportConfigToExcel('phongban')">📊 Xuất Excel</button>
+                        <button type="button" class="secondary" style="width:auto; margin:0; border-color:#1565c0; color:#1565c0;" onclick="openImportModal('phongban')">📥 Nhập Excel</button>
+                        <button style="width: auto; margin:0;" onclick="openPhongBanModal('add')">+ Thêm Phòng Ban</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Mã Phòng</th>
+                                    <th>Tên Phòng Ban</th>
+                                    <th>Mô Tả Chức Năng</th>
+                                    <th style="width: 150px; text-align: center;">Thao Tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="body-phong-ban"></tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-bar" id="page-bar-pb">
+                        <div class="pagination-info" id="info-pb"></div>
+                        <div class="pagination-buttons" id="btn-pb"></div>
+                    </div>
+                </div>
+
+                <!-- ================= TAB 4: DANH SÁCH DỊCH VỤ ================= -->
+                <div id="tab-dich-vu" class="tab-content-panel">
+                    <div class="panel-action-bar">
+                        <div class="search-box-wrapper">
+                            <span class="search-icon-inside">🔍</span>
+                            <input type="text" id="search-dv" class="search-input" placeholder="Tìm kiếm dịch vụ theo tên hoặc mã..." oninput="handleSearchData()">
+                        </div>
+                        <button type="button" class="secondary" style="width:auto; margin:0; border-color:#2e7d32; color:#2e7d32;" onclick="exportConfigToExcel('dichvu')">📊 Xuất Excel</button>
+                        <button type="button" class="secondary" style="width:auto; margin:0; border-color:#1565c0; color:#1565c0;" onclick="openImportModal('dichvu')">📥 Nhập Excel</button>
+                        <button style="width: auto; margin:0;" onclick="openDichVuModal('add')">+ Thêm Dịch Vụ</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Mã DV</th>
+                                    <th>Tên Dịch Vụ</th>
+                                    <th>Nhóm Dịch Vụ</th>
+                                    <th>Mô Tả</th>
+                                    <th style="width: 150px; text-align: center;">Thao Tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="body-dich-vu"></tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-bar" id="page-bar-dv">
+                        <div class="pagination-info" id="info-dv"></div>
+                        <div class="pagination-buttons" id="btn-dv"></div>
+                    </div>
+                </div>
+
+                <!-- ================= TAB 5: DANH SÁCH NGUỒN KHÁCH HÀNG ================= -->
+                <div id="tab-nguon-khach" class="tab-content-panel">
+                    <div class="panel-action-bar">
+                        <div class="search-box-wrapper">
+                            <span class="search-icon-inside">🔍</span>
+                            <input type="text" id="search-nk" class="search-input" placeholder="Tìm kiếm nguồn khách theo tên hoặc mã..." oninput="handleSearchData()">
+                        </div>
+                        <button type="button" class="secondary" style="width:auto; margin:0; border-color:#2e7d32; color:#2e7d32;" onclick="exportConfigToExcel('nguonkhach')">📊 Xuất Excel</button>
+                        <button type="button" class="secondary" style="width:auto; margin:0; border-color:#1565c0; color:#1565c0;" onclick="openImportModal('nguonkhach')">📥 Nhập Excel</button>
+                        <button style="width: auto; margin:0;" onclick="openNguonKhachModal('add')">+ Thêm Nguồn Khách</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Mã Nguồn Khách</th>
+                                    <th>Tên Nguồn</th>
+                                    <th>Mô Tả</th>
+                                    <th style="width: 150px; text-align: center;">Thao Tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="body-nguon-khach"></tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-bar" id="page-bar-nk">
+                        <div class="pagination-info" id="info-nk"></div>
+                        <div class="pagination-buttons" id="btn-nk"></div>
+                    </div>
+                </div>
+
+                <!-- ================= TAB QUẢN TRỊ: DANH SÁCH NHÓM LOẠI VĂN BẢN ================= -->
+                <div id="tab-nhom-loai-van-ban" class="tab-content-panel">
+                    <div class="panel-action-bar">
+                        <div class="search-box-wrapper">
+                            <span class="search-icon-inside">🔍</span>
+                            <input type="text" id="search-nlvb" class="search-input" placeholder="Tìm kiếm nhóm loại văn bản theo tên hoặc mã..." oninput="handleSearchData()">
+                        </div>
+                        <button type="button" class="secondary" style="width:auto; margin:0; border-color:#2e7d32; color:#2e7d32;" onclick="exportConfigToExcel('nhomloaivanban')">📊 Xuất Excel</button>
+                        <button type="button" class="secondary" style="width:auto; margin:0; border-color:#1565c0; color:#1565c0;" onclick="openImportModal('nhomloaivanban')">📥 Nhập Excel</button>
+                        <button style="width: auto; margin:0;" onclick="openNhomLoaiVanBanModal('add')">+ Thêm Nhóm Loại Văn Bản</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Mã Nhóm</th>
+                                    <th>Tên Nhóm</th>
+                                    <th>Nhóm Cha</th>
+                                    <th style="width: 150px; text-align: center;">Thao Tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="body-nhom-loai-van-ban"></tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-bar" id="page-bar-nlvb">
+                        <div class="pagination-info" id="info-nlvb"></div>
+                        <div class="pagination-buttons" id="btn-nlvb"></div>
+                    </div>
+                </div>
+
+                <!-- ================= TAB QUẢN TRỊ: DANH SÁCH LOẠI VĂN BẢN ================= -->
+                <div id="tab-loai-van-ban" class="tab-content-panel">
+                    <div class="panel-action-bar">
+                        <div class="search-box-wrapper">
+                            <span class="search-icon-inside">🔍</span>
+                            <input type="text" id="search-lvb" class="search-input" placeholder="Tìm kiếm loại văn bản theo tên hoặc mã..." oninput="handleSearchData()">
+                        </div>
+                        <button type="button" class="secondary" style="width:auto; margin:0; border-color:#2e7d32; color:#2e7d32;" onclick="exportConfigToExcel('loaivanban')">📊 Xuất Excel</button>
+                        <button type="button" class="secondary" style="width:auto; margin:0; border-color:#1565c0; color:#1565c0;" onclick="openImportModal('loaivanban')">📥 Nhập Excel</button>
+                        <button style="width: auto; margin:0;" onclick="openLoaiVanBanModal('add')">+ Thêm Loại Văn Bản</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Mã Loại Văn Bản</th>
+                                    <th>Tên Loại Văn Bản</th>
+                                    <th>Ký Hiệu</th>
+                                    <th>Số Tiếp Theo Sẽ Dùng</th>
+                                    <th style="width: 150px; text-align: center;">Thao Tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="body-loai-van-ban"></tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-bar" id="page-bar-lvb">
+                        <div class="pagination-info" id="info-lvb"></div>
+                        <div class="pagination-buttons" id="btn-lvb"></div>
+                    </div>
+                </div>
+
+                <!-- ================= TAB QUẢN TRỊ: CẤU HÌNH MÃ PHÁT SINH ================= -->
+                <div id="tab-cau-hinh-ma" class="tab-content-panel">
+                    <div class="empty-state" style="border-style: solid; background: #faf8f3; text-align: left; max-width: 480px; margin: 0;">
+                        <h3 style="margin-bottom: 14px;">🔢 Cấu Hình Mã Phát Sinh — Mã Khách Hàng (Dùng Chung)</h3>
+                        <p style="font-size: 13px; color: #666; margin-bottom: 16px;">Thiết lập mẫu mã tự động gợi ý khi thêm mới ở <strong>Danh sách lịch phẫu thuật</strong> hoặc <strong>Danh sách khách hàng</strong> (CRM) - cả 2 giao diện dùng chung một bộ đếm, giao diện nào mở trước sẽ được cấp số tiếp theo trước, tránh trùng mã. Nhân viên vẫn có thể tự chỉnh sửa lại mã khi thêm/sửa nếu cần.</p>
+
+                        <label>Tiền tố mã:</label>
+                        <input type="text" id="cfg-code-prefix" placeholder="Ví dụ: PT" style="text-transform: uppercase;" oninput="updateSurgeryCodePreview()">
+                        <label>Số chữ số đệm (0 phía trước):</label>
+                        <input type="number" id="cfg-code-digits" min="1" max="10" placeholder="Ví dụ: 4" oninput="updateSurgeryCodePreview()">
+                        <label>Số thứ tự tiếp theo sẽ dùng:</label>
+                        <input type="number" id="cfg-code-next" min="1" placeholder="Ví dụ: 1" oninput="updateSurgeryCodePreview()">
+
+                        <div style="background:#faf8f3; border:1px dashed var(--gold); border-radius:6px; padding:10px 14px; margin-bottom:16px; font-size:13px;">
+                            Xem trước mã tiếp theo: <strong id="cfg-code-preview" style="color:var(--bronze); font-family:monospace; font-size:15px;">--</strong>
+                        </div>
+
+                        <button id="btn-save-code-config" onclick="saveSurgeryCodeConfig()">Lưu Cấu Hình</button>
+                    </div>
+                </div>
+
+                <!-- ================= TAB QUẢN TRỊ: NHẬT KÝ HOẠT ĐỘNG ================= -->
+                <div id="tab-nhat-ky" class="tab-content-panel">
+                    <div class="panel-action-bar">
+                        <div class="search-box-wrapper">
+                            <span class="search-icon-inside">🔍</span>
+                            <input type="text" id="search-nk-log" class="search-input" placeholder="Tìm theo người dùng, module, hành động, chi tiết..." oninput="renderNhatKyTable()">
+                        </div>
+                        <select id="nk-log-filter-type" onchange="renderNhatKyTable()" style="width:auto; margin:0; padding:9px 12px;">
+                            <option value="">Tất cả loại</option>
+                            <option value="action">✅ Hoạt động</option>
+                            <option value="error">⚠️ Lỗi</option>
+                        </select>
+                        <button type="button" class="secondary" style="width:auto; margin:0; border-color:#2e7d32; color:#2e7d32;" onclick="exportConfigToExcel('nhatky')">📊 Xuất Excel</button>
+                        <button type="button" class="secondary" style="width:auto; margin:0; border-color:#c62828; color:#c62828;" onclick="clearOldActivityLogs()">🗑️ Xóa Log Cũ</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table" style="font-size: 13px;">
+                            <thead>
+                                <tr>
+                                    <th class="col-nowrap" style="width:14%;">Thời Gian</th>
+                                    <th style="width:13%;">Người Dùng</th>
+                                    <th class="col-nowrap" style="width:9%;">Loại</th>
+                                    <th style="width:14%;">Module</th>
+                                    <th style="width:15%;">Hành Động</th>
+                                    <th>Chi Tiết</th>
+                                </tr>
+                            </thead>
+                            <tbody id="body-nhat-ky"></tbody>
+                        </table>
+                        <p style="font-size: 10.5px; color: #999; margin: 6px 2px 0;">*(Chỉ lưu tối đa 2000 dòng gần nhất để tránh làm phình to file dữ liệu - log cũ hơn sẽ tự động bị loại bỏ dần)*</p>
+                    </div>
+                    <div class="pagination-bar" id="page-bar-nk-log">
+                        <div class="pagination-info" id="info-nk-log"></div>
+                        <div class="pagination-buttons" id="btn-nk-log"></div>
+                    </div>
+                </div>
+
+                <!-- ================= TAB NGHIỆP VỤ 1: ĐẶT LỊCH HẸN (CON CỦA LỄ TÂN) ================= -->
+                <div id="tab-dat-lich-hen" class="tab-content-panel">
+                    <div class="panel-action-bar">
+                        <div class="search-box-wrapper">
+                            <span class="search-icon-inside">🔍</span>
+                            <input type="text" id="search-lh" class="search-input" placeholder="Tìm theo tên khách hàng hoặc số điện thoại..." oninput="handleSearchData()">
+                        </div>
+                        <div class="view-toggle-group">
+                            <button type="button" class="view-toggle-btn active" id="btn-lh-view-list" onclick="setLichHenViewMode('list')">📋 Danh sách</button>
+                            <button type="button" class="view-toggle-btn" id="btn-lh-view-calendar" onclick="setLichHenViewMode('calendar')">📅 Lịch tháng</button>
+                        </div>
+                        <button type="button" class="secondary icon-filter-btn" title="Lọc nâng cao theo Tên, SĐT, khoảng ngày đặt lịch" onclick="openAdvancedFilterModal()">⚙️</button>
+                        <button style="width: auto; margin:0;" onclick="openLichHenModal('add')">+ Đặt Lịch Hẹn</button>
+                    </div>
+                    <div id="dat-lich-hen-container"></div>
+                </div>
+
+                <!-- ================= TAB LỄ TÂN: ĐẶT LỊCH TÁI KHÁM, THAY BĂNG, CẮT CHỈ (SUB-MENU CỦA NHẬP LIỆU LỄ TÂN) ================= -->
+                <div id="tab-tai-kham" class="tab-content-panel">
+                    <div class="panel-action-bar">
+                        <div class="search-box-wrapper">
+                            <span class="search-icon-inside">🔍</span>
+                            <input type="text" id="search-tk" class="search-input" placeholder="Tìm theo tên khách hàng hoặc số điện thoại..." oninput="handleSearchData()">
+                        </div>
+                        <div class="view-toggle-group">
+                            <button type="button" class="view-toggle-btn active" id="btn-tk-view-list" onclick="setTaiKhamViewMode('list')">📋 Danh sách</button>
+                            <button type="button" class="view-toggle-btn" id="btn-tk-view-calendar" onclick="setTaiKhamViewMode('calendar')">📅 Lịch tháng</button>
+                        </div>
+                        <button type="button" class="secondary icon-filter-btn" title="Lọc nâng cao theo Tên, SĐT, khoảng ngày đặt lịch" onclick="openTaiKhamAdvancedFilterModal()">⚙️</button>
+                        <button style="width: auto; margin:0;" onclick="openTaiKhamModal('add')">+ Đặt Lịch Hẹn</button>
+                    </div>
+                    <div id="tai-kham-container"></div>
+                </div>
+
+                <!-- ================= TAB LỄ TÂN: DANH SÁCH LỊCH PHẪU THUẬT (SUB-MENU CỦA NHẬP LIỆU LỄ TÂN) ================= -->
+                <div id="tab-lich-phau-thuat" class="tab-content-panel">
+                    <div class="panel-action-bar">
+                        <div class="search-box-wrapper">
+                            <span class="search-icon-inside">🔍</span>
+                            <input type="text" id="search-pt" class="search-input" placeholder="Tìm theo mã, tên khách hàng hoặc số điện thoại..." oninput="handleSearchData()">
+                        </div>
+                        <div class="view-toggle-group">
+                            <button type="button" class="view-toggle-btn active" id="btn-pt-view-list" onclick="setLichPhauThuatViewMode('list')">📋 Danh sách</button>
+                            <button type="button" class="view-toggle-btn" id="btn-pt-view-calendar" onclick="setLichPhauThuatViewMode('calendar')">📅 Lịch tháng</button>
+                        </div>
+                        <button type="button" class="secondary icon-filter-btn" title="Lọc nâng cao theo Tên, SĐT, khoảng ngày phẫu thuật" onclick="openLichPhauThuatAdvancedFilterModal()">⚙️</button>
+                        <button style="width: auto; margin:0;" onclick="openLichPhauThuatModal('add')">+ Đặt Lịch Phẫu Thuật</button>
+                    </div>
+                    <div id="lich-phau-thuat-container"></div>
+                </div>
+
+                <!-- ================= TAB LỄ TÂN: DASHBOARD (SUB-MENU CỦA NHẬP LIỆU LỄ TÂN) ================= -->
+                <div id="tab-dashboard-letan" class="tab-content-panel">
+                    <div class="dashboard-header">
+                        <div class="dashboard-title">📊 Dashboard Lễ Tân</div>
+                        <div class="dashboard-subtitle" id="dashboard-subtitle"></div>
+                    </div>
+
+                    <div class="dashboard-filter-bar">
+                        <div class="dashboard-filter-group">
+                            <label>Tháng</label>
+                            <select id="dash-filter-month"></select>
+                        </div>
+                        <div class="dashboard-filter-group">
+                            <label>Năm</label>
+                            <select id="dash-filter-year"></select>
+                        </div>
+                        <div class="dashboard-filter-divider">hoặc</div>
+                        <div class="dashboard-filter-group">
+                            <label>Từ ngày</label>
+                            <input type="date" id="dash-filter-from">
+                        </div>
+                        <div class="dashboard-filter-group">
+                            <label>Đến ngày</label>
+                            <input type="date" id="dash-filter-to">
+                        </div>
+                        <button type="button" onclick="applyDashboardFilter()">🔍 Áp Dụng</button>
+                        <button type="button" class="secondary" onclick="resetDashboardFilter()">↺ Về Tháng Này</button>
+                    </div>
+
+                    <div class="dashboard-grid">
+                        <div class="dashboard-card" style="--card-accent: var(--bronze); --card-accent-bg: #fbead0;">
+                            <div class="dashboard-card-icon">📥</div>
+                            <div class="dashboard-card-body">
+                                <div class="dashboard-card-value" id="dash-data-thang">0</div>
+                                <div class="dashboard-card-label">Tổng Data Trong Tháng</div>
+                            </div>
+                        </div>
+                        <div class="dashboard-card" style="--card-accent: #2e7d32; --card-accent-bg: #e8f5e9;">
+                            <div class="dashboard-card-icon">🏥</div>
+                            <div class="dashboard-card-body">
+                                <div class="dashboard-card-value" id="dash-phauthuat-hoanthanh">0</div>
+                                <div class="dashboard-card-label">Ca Phẫu Thuật Hoàn Thành</div>
+                                <div class="dashboard-card-note">Theo khoảng lọc đã chọn</div>
+                            </div>
+                        </div>
+                        <div class="dashboard-card" style="--card-accent: #c62828; --card-accent-bg: #fdecea;">
+                            <div class="dashboard-card-icon">❌</div>
+                            <div class="dashboard-card-body">
+                                <div class="dashboard-card-value" id="dash-tong-huy">0</div>
+                                <div class="dashboard-card-label">Ca Phẫu Thuật Đã Hủy</div>
+                                <div class="dashboard-card-note">Theo khoảng lọc đã chọn</div>
+                            </div>
+                        </div>
+                        <div class="dashboard-card" style="--card-accent: #1565c0; --card-accent-bg: #e3f2fd;">
+                            <div class="dashboard-card-icon">📅</div>
+                            <div class="dashboard-card-body">
+                                <div class="dashboard-card-value" id="dash-tuvan-dangky">0</div>
+                                <div class="dashboard-card-label">Ca Tư Vấn Đã Hoàn Thành</div>
+                                <div class="dashboard-card-note">Theo khoảng lọc đã chọn</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-charts-grid">
+                        <div class="dashboard-chart-card" style="display:flex; flex-direction:column; align-items:center;">
+                            <div class="dashboard-chart-title" style="align-self:flex-start;">🎯 Tỷ Lệ Chuyển Đổi Data → Tư Vấn <span id="dash-conversion-title-period"></span></div>
+                            <svg viewBox="0 0 120 120" width="128" height="128">
+                                <circle cx="60" cy="60" r="50" fill="none" stroke="#f0ede4" stroke-width="13"/>
+                                <circle id="dash-conversion-ring" cx="60" cy="60" r="50" fill="none" stroke="var(--bronze)" stroke-width="13" stroke-linecap="round" transform="rotate(-90 60 60)" stroke-dasharray="0 314"/>
+                                <text id="dash-conversion-text" x="60" y="67" text-anchor="middle" font-size="22" font-weight="800" fill="#3c1f18">0%</text>
+                            </svg>
+                            <div style="display:flex; gap:16px; margin-top:10px; font-size:11.5px; color:#666;">
+                                <div><span class="dashboard-legend-dot" style="background:var(--bronze);"></span>Data: <strong id="dash-conversion-data-count">0</strong></div>
+                                <div><span class="dashboard-legend-dot" style="background:#e0dcd0;"></span>Đã đến tư vấn: <strong id="dash-conversion-tuvan-count">0</strong></div>
+                            </div>
+                        </div>
+
+                        <div class="dashboard-chart-card">
+                            <div class="dashboard-chart-title">📊 Data & Ca Tư Vấn Theo Nhân Viên <span id="dash-bar-title-period"></span></div>
+                            <div style="display:flex; gap:14px; font-size:11px; color:#666; margin-bottom:12px;">
+                                <div><span class="dashboard-legend-dot" style="background:var(--bronze);"></span>Data</div>
+                                <div><span class="dashboard-legend-dot" style="background:#1565c0;"></span>Ca tư vấn</div>
+                            </div>
+                            <div id="dash-staff-bar-chart"></div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-charts-grid">
+                        <div class="dashboard-chart-card" style="display:flex; flex-direction:column; align-items:center;">
+                            <div class="dashboard-chart-title" style="align-self:flex-start;">🌐 Data Theo Nguồn Khách Hàng <span id="dash-source-title-period"></span></div>
+                            <div style="position:relative; width:128px; height:128px;">
+                                <div id="dash-source-donut" style="width:128px; height:128px; border-radius:50%; background:#f0ede4;"></div>
+                                <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:76px; height:76px; background:white; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-direction:column;">
+                                    <div style="font-size:18px; font-weight:800; color:var(--dark-brown);" id="dash-source-total">0</div>
+                                    <div style="font-size:9px; color:#999;">Data</div>
+                                </div>
+                            </div>
+                            <div id="dash-source-legend" class="dashboard-donut-legend"></div>
+                        </div>
+
+                        <div class="dashboard-chart-card">
+                            <div class="dashboard-chart-title">🏥 Ca Phẫu Thuật Đã Thực Hiện Theo Dịch Vụ <span id="dash-service-title-period"></span></div>
+                            <div style="font-size:10.5px; color:#bbb; margin-bottom:12px; margin-top:-6px;">(Không tính ca đã hủy)</div>
+                            <div id="dash-service-bar-chart"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= TAB LỄ TÂN: DANH SÁCH DATA (SUB-MENU CỦA NHẬP LIỆU LỄ TÂN) ================= -->
+                <!-- Quản lý data khách hàng tiềm năng được cung cấp từ các nguồn, trước khi trở thành khách hàng chính thức -->
+                <div id="tab-crm-data" class="tab-content-panel">
+                    <div class="panel-action-bar">
+                        <div class="search-box-wrapper">
+                            <span class="search-icon-inside">🔍</span>
+                            <input type="text" id="search-cd" class="search-input" placeholder="Tìm theo số điện thoại hoặc tên nick..." oninput="handleSearchData()">
+                        </div>
+                        <button type="button" class="secondary icon-filter-btn" title="Lọc nâng cao theo Nhân viên nhận, Trạng thái, khoảng ngày nhận Data" onclick="openCrmDataFilterModal()">⚙️</button>
+                        <button style="width: auto; margin:0;" onclick="openCrmDataModal('add')">+ Thêm Data</button>
+                    </div>
+                    <div id="cd-filter-active-banner" style="display:none; align-items:center; justify-content:space-between; background:#fbead0; border:1px solid var(--gold); border-radius:6px; padding:8px 12px; margin-bottom:10px; font-size:12.5px; color:var(--bronze);">
+                        <span id="cd-filter-active-text"></span>
+                        <button type="button" class="secondary" style="width:auto; margin:0; padding:4px 10px; font-size:11.5px;" onclick="resetCrmDataFilter()">✕ Bỏ lọc</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table data-table-compact">
+                            <thead>
+                                <tr>
+                                    <th class="col-nowrap">Số Điện Thoại</th>
+                                    <th>Tên Nick</th>
+                                    <th class="col-nowrap">Thời Gian Nhận</th>
+                                    <th>Nguồn Khách</th>
+                                    <th class="col-nowrap">Nhân Viên Nhận</th>
+                                    <th class="col-nowrap">Trạng Thái</th>
+                                    <th style="width: 130px; text-align: center;">Thao Tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="body-crm-data"></tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-bar" id="page-bar-cd">
+                        <div class="pagination-info" id="info-cd"></div>
+                        <div class="pagination-buttons" id="btn-cd"></div>
+                    </div>
+                </div>
+
+                <!-- ================= TAB CRM: DANH SÁCH KHÁCH HÀNG (SUB-MENU CỦA CRM) ================= -->
+                <!-- Đây là danh sách khách hàng TỔNG của cả hệ thống (master registry), không gắn với dịch vụ/nguồn khách -->
+                <div id="tab-crm-khach-hang" class="tab-content-panel">
+                    <div class="panel-action-bar">
+                        <div class="search-box-wrapper">
+                            <span class="search-icon-inside">🔍</span>
+                            <input type="text" id="search-ck" class="search-input" placeholder="Tìm theo mã, tên khách hàng, SĐT hoặc CCCD/Passport..." oninput="handleSearchData()">
+                        </div>
+                        <button style="width: auto; margin:0;" onclick="openCrmKhachHangModal('add')">+ Thêm Khách Hàng</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Mã KH</th>
+                                    <th>Tên Khách Hàng</th>
+                                    <th>Số Điện Thoại</th>
+                                    <th>Địa Chỉ</th>
+                                    <th>Ngày Sinh</th>
+                                    <th>CCCD / Passport</th>
+                                    <th style="width: 150px; text-align: center;">Thao Tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="body-crm-khach-hang"></tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-bar" id="page-bar-ck">
+                        <div class="pagination-info" id="info-ck"></div>
+                        <div class="pagination-buttons" id="btn-ck"></div>
+                    </div>
+                </div>
+
+                <!-- ================= TAB HÀNH CHÍNH NHÂN SỰ: QUẢN LÝ VĂN BẢN ================= -->
+                <div id="tab-quan-ly-van-ban" class="tab-content-panel">
+                    <div class="panel-action-bar">
+                        <div class="search-box-wrapper">
+                            <span class="search-icon-inside">🔍</span>
+                            <input type="text" id="search-vb" class="search-input" placeholder="Tìm theo mã văn bản hoặc trích yếu..." oninput="handleSearchData()">
+                        </div>
+                        <button type="button" class="secondary icon-filter-btn" title="Lọc nâng cao theo Mã văn bản, Loại văn bản, Ngày phát hành, Mã văn bản trả lời, Người ký" onclick="openVanBanFilterModal()">⚙️</button>
+                        <button type="button" class="secondary" style="width:auto; margin:0; border-color:#2e7d32; color:#2e7d32;" title="Xuất danh sách văn bản đang xem ra file Excel" onclick="exportConfigToExcel('vanban')">📊 Xuất Excel</button>
+                        <button type="button" class="secondary" style="width:auto; margin:0; border-color:#1565c0; color:#1565c0;" onclick="openImportModal('vanban')">📥 Nhập Excel</button>
+                        <button style="width: auto; margin:0;" onclick="openVanBanModal('add')">+ Cấp Số Văn Bản Mới</button>
+                    </div>
+                    <div id="vb-filter-active-banner" style="display:none; align-items:center; justify-content:space-between; background:#fbead0; border:1px solid var(--gold); border-radius:6px; padding:8px 12px; margin-bottom:10px; font-size:12.5px; color:var(--bronze);">
+                        <span id="vb-filter-active-text"></span>
+                        <button type="button" class="secondary" style="width:auto; margin:0; padding:4px 10px; font-size:11.5px;" onclick="resetVanBanFilter()">✕ Bỏ lọc</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table" style="font-size: 13.5px;">
+                            <thead>
+                                <tr>
+                                    <th class="col-nowrap" style="width: 10%;">Mã Văn Bản</th>
+                                    <th style="width: 10%;">Loại Văn Bản</th>
+                                    <th style="width: 26%;">Trích Yếu</th>
+                                    <th class="col-nowrap" style="width: 9%;">Ngày Ban Hành</th>
+                                    <th style="width: 12%;">Khoa Phòng</th>
+                                    <th style="width: 11%;">Trả Lời VB Số</th>
+                                    <th style="width: 12%;">Phát Hành Đến Đơn Vị</th>
+                                    <th style="width: 130px; text-align: center;">Thao Tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="body-van-ban"></tbody>
+                        </table>
+                        <p style="font-size: 10.5px; color: #999; margin: 6px 2px 0;">*(Bấm "Xem chi tiết" để xem đầy đủ: Ghi chú, Đường dẫn lưu file, tình trạng phát hành...)*</p>
+                    </div>
+                    <div class="pagination-bar" id="page-bar-vb">
+                        <div class="pagination-info" id="info-vb"></div>
+                        <div class="pagination-buttons" id="btn-vb"></div>
+                    </div>
+                </div>
+
+                <!-- ================= TAB HANH CHINH NHAN SU: QUAN LY CME ================= -->
+                <div id="tab-quan-ly-cme" class="tab-content-panel">
+                    <div class="panel-action-bar">
+                        <div class="search-box-wrapper">
+                            <span class="search-icon-inside">🔍</span>
+                            <input type="text" id="search-cme" class="search-input" placeholder="Tìm theo họ tên hoặc số giấy phép..." oninput="handleSearchData()">
+                        </div>
+                        <select id="cme-filter-year" onchange="renderCmeTable()" style="width:auto; margin:0; padding:9px 12px;"></select>
+                        <button type="button" class="secondary" style="width:auto; margin:0; border-color:#2e7d32; color:#2e7d32;" onclick="exportConfigToExcel('cme')">📊 Xuất Excel</button>
+                        <button type="button" class="secondary" style="width:auto; margin:0; border-color:#1565c0; color:#1565c0;" onclick="openImportModal('cme')">📥 Nhập Excel</button>
+                        <button style="width: auto; margin:0;" onclick="openCmeModal('add')">+ Thêm Mới CME</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table" style="font-size: 13.5px;">
+                            <thead>
+                                <tr>
+                                    <th style="width: 20%;">Họ Và Tên</th>
+                                    <th style="width: 18%;">Vị Trí Chuyên Môn</th>
+                                    <th style="width: 16%;">Chức Danh</th>
+                                    <th class="col-nowrap" style="width: 16%;">Số Giấy Phép / CCHN</th>
+                                    <th class="col-nowrap" style="width: 10%; text-align:center;" id="cme-th-daotao">Đào Tạo</th>
+                                    <th style="width: 130px; text-align: center;">Thao Tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="body-cme"></tbody>
+                        </table>
+                        <p style="font-size: 10.5px; color: #999; margin: 6px 2px 0;">*(Bấm "Xem chi tiết" để xem đầy đủ Phạm vi hành nghề và Quá trình đào tạo)*</p>
+                    </div>
+                    <div class="pagination-bar" id="page-bar-cme">
+                        <div class="pagination-info" id="info-cme"></div>
+                        <div class="pagination-buttons" id="btn-cme"></div>
+                    </div>
+                </div>
+
+                <!-- ================= TAB QUẢN LÝ KHOA DƯỢC: DANH MỤC NHÀ CUNG CẤP ================= -->
+                <div id="tab-nha-cung-cap" class="tab-content-panel">
+                    <div class="panel-action-bar">
+                        <div class="search-box-wrapper">
+                            <span class="search-icon-inside">🔍</span>
+                            <input type="text" id="search-ncc" class="search-input" placeholder="Tìm kiếm nhà cung cấp theo tên hoặc mã..." oninput="handleSearchData()">
+                        </div>
+                        <button type="button" class="secondary" style="width:auto; margin:0; border-color:#2e7d32; color:#2e7d32;" onclick="exportConfigToExcel('nhacungcap')">📊 Xuất Excel</button>
+                        <button type="button" class="secondary" style="width:auto; margin:0; border-color:#1565c0; color:#1565c0;" onclick="openImportModal('nhacungcap')">📥 Nhập Excel</button>
+                        <button style="width: auto; margin:0;" onclick="openNhaCungCapModal('add')">+ Thêm Nhà Cung Cấp</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Mã Nhà Cung Cấp</th>
+                                    <th>Tên Nhà Cung Cấp</th>
+                                    <th>Số Điện Thoại</th>
+                                    <th style="width: 150px; text-align: center;">Thao Tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="body-nha-cung-cap"></tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-bar" id="page-bar-ncc">
+                        <div class="pagination-info" id="info-ncc"></div>
+                        <div class="pagination-buttons" id="btn-ncc"></div>
+                    </div>
+                </div>
+
+                <!-- ================= TAB QUẢN LÝ KHOA DƯỢC: DANH MỤC NHÀ SẢN XUẤT ================= -->
+                <div id="tab-nha-san-xuat" class="tab-content-panel">
+                    <div class="panel-action-bar">
+                        <div class="search-box-wrapper">
+                            <span class="search-icon-inside">🔍</span>
+                            <input type="text" id="search-nsx" class="search-input" placeholder="Tìm kiếm nhà sản xuất theo tên hoặc mã..." oninput="handleSearchData()">
+                        </div>
+                        <button type="button" class="secondary" style="width:auto; margin:0; border-color:#2e7d32; color:#2e7d32;" onclick="exportConfigToExcel('nhasanxuat')">📊 Xuất Excel</button>
+                        <button type="button" class="secondary" style="width:auto; margin:0; border-color:#1565c0; color:#1565c0;" onclick="openImportModal('nhasanxuat')">📥 Nhập Excel</button>
+                        <button style="width: auto; margin:0;" onclick="openNhaSanXuatModal('add')">+ Thêm Nhà Sản Xuất</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Mã Nhà Sản Xuất</th>
+                                    <th>Tên Nhà Sản Xuất</th>
+                                    <th>Nước Sản Xuất</th>
+                                    <th style="width: 150px; text-align: center;">Thao Tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="body-nha-san-xuat"></tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-bar" id="page-bar-nsx">
+                        <div class="pagination-info" id="info-nsx"></div>
+                        <div class="pagination-buttons" id="btn-nsx"></div>
+                    </div>
+                </div>
+
+                <!-- ================= TAB QUẢN LÝ KHOA DƯỢC: DANH MỤC ĐƠN VỊ TÍNH ================= -->
+                <div id="tab-don-vi-tinh" class="tab-content-panel">
+                    <div class="panel-action-bar">
+                        <div class="search-box-wrapper">
+                            <span class="search-icon-inside">🔍</span>
+                            <input type="text" id="search-dvt" class="search-input" placeholder="Tìm kiếm đơn vị tính theo tên hoặc mã..." oninput="handleSearchData()">
+                        </div>
+                        <button style="width: auto; margin:0;" onclick="openDonViTinhModal('add')">+ Thêm Đơn Vị Tính</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Mã Đơn Vị Tính</th>
+                                    <th>Tên Đơn Vị Tính</th>
+                                    <th>Ghi Chú</th>
+                                    <th style="width: 150px; text-align: center;">Thao Tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="body-don-vi-tinh"></tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-bar" id="page-bar-dvt">
+                        <div class="pagination-info" id="info-dvt"></div>
+                        <div class="pagination-buttons" id="btn-dvt"></div>
+                    </div>
+                </div>
+
+                <!-- ================= TAB QUẢN LÝ KHOA DƯỢC: THUỐC VÀ TỒN KHO ================= -->
+                <div id="tab-nhap-lieu-kho-thuoc" class="tab-content-panel">
+                    <div class="panel-action-bar">
+                        <div class="search-box-wrapper">
+                            <span class="search-icon-inside">🔍</span>
+                            <input type="text" id="search-th" class="search-input" placeholder="Tìm kiếm thuốc theo tên hoặc mã..." oninput="handleSearchData()">
+                        </div>
+                        <button type="button" class="secondary" style="width:auto; margin:0; border-color:#2e7d32; color:#2e7d32;" onclick="exportConfigToExcel('thuoc')">📊 Xuất Excel</button>
+                        <button type="button" class="secondary" style="width:auto; margin:0; border-color:#1565c0; color:#1565c0;" onclick="openImportModal('thuoc')">📥 Nhập Excel</button>
+                        <button style="width: auto; margin:0;" onclick="openThuocModal('add')">+ Thêm Thuốc Mới</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Mã Thuốc</th>
+                                    <th>Tên Thuốc</th>
+                                    <th>Nhóm Thuốc</th>
+                                    <th>Hàm Lượng</th>
+                                    <th>Đơn Vị Tính</th>
+                                    <th>Tồn Kho Hiện Tại</th>
+                                    <th style="width: 150px; text-align: center;">Thao Tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="body-th"></tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-bar" id="page-bar-th">
+                        <div class="pagination-info" id="info-th"></div>
+                        <div class="pagination-buttons" id="btn-th"></div>
+                    </div>
+                </div>
+
+                <!-- ================= TAB QUẢN LÝ KHOA DƯỢC: PHIẾU XUẤT / NHẬP KHO ================= -->
+                <div id="tab-phieu-kho" class="tab-content-panel">
+                    <div class="panel-action-bar">
+                        <div class="view-toggle-group">
+                            <button type="button" class="view-toggle-btn active" id="btn-pk-view-nhap" onclick="setPhieuKhoViewMode('nhap')">📥 Phiếu nhập kho</button>
+                            <button type="button" class="view-toggle-btn" id="btn-pk-view-xuat" onclick="setPhieuKhoViewMode('xuat')">📤 Phiếu xuất kho</button>
+                        </div>
+                    </div>
+
+                    <!-- VIEW: PHIẾU NHẬP KHO -->
+                    <div id="phieu-kho-view-nhap">
+                        <div class="panel-action-bar">
+                            <div class="search-box-wrapper">
+                                <span class="search-icon-inside">🔍</span>
+                                <input type="text" id="search-pnk" class="search-input" placeholder="Tìm kiếm phiếu nhập kho theo mã phiếu..." oninput="handleSearchData()">
+                            </div>
+                            <button style="width: auto; margin:0;" onclick="openPhieuNhapKhoModal()">+ Thêm Phiếu Nhập Kho</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Mã Phiếu</th>
+                                        <th>Ngày Nhập</th>
+                                        <th>Số Loại Thuốc</th>
+                                        <th>Người Tạo</th>
+                                        <th style="width: 120px; text-align: center;">Thao Tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="body-pnk"></tbody>
+                            </table>
+                        </div>
+                        <div class="pagination-bar" id="page-bar-pnk">
+                            <div class="pagination-info" id="info-pnk"></div>
+                            <div class="pagination-buttons" id="btn-pnk"></div>
+                        </div>
+                    </div>
+
+                    <!-- VIEW: PHIẾU XUẤT KHO - Chỉ xem/in, KHÔNG cho sửa/xóa phiếu đã tạo -->
+                    <div id="phieu-kho-view-xuat" style="display:none;">
+                        <div class="panel-action-bar">
+                            <div class="search-box-wrapper">
+                                <span class="search-icon-inside">🔍</span>
+                                <input type="text" id="search-pxk" class="search-input" placeholder="Tìm kiếm phiếu xuất kho theo mã phiếu..." oninput="handleSearchData()">
+                            </div>
+                            <button style="width: auto; margin:0;" onclick="openPhieuXuatKhoModal()">+ Thêm Phiếu Xuất Kho</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Mã Phiếu</th>
+                                        <th>Ngày Giờ Xuất</th>
+                                        <th>Đơn Vị Lĩnh</th>
+                                        <th>Tên Khách Hàng</th>
+                                        <th>Số Loại Thuốc</th>
+                                        <th style="width: 120px; text-align: center;">Thao Tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="body-pxk"></tbody>
+                            </table>
+                        </div>
+                        <div class="pagination-bar" id="page-bar-pxk">
+                            <div class="pagination-info" id="info-pxk"></div>
+                            <div class="pagination-buttons" id="btn-pxk"></div>
+                        </div>
+                    </div>
+                </div>
+                <div id="tab-ky-thuat" class="tab-content-panel">
+                    <div class="empty-state" style="border-style: solid; background: #fff3e0;">
+                        <h3>🔧 PHÂN HỆ THAO TÁC CỦA PHÒNG KỸ THUẬT</h3>
+                        <p style="margin-top: 10px; font-size: 14px; color: #444;">Giao diện phân quyền thành công. Hệ thống quản trị ticket vận hành sửa chữa thiết bị hiển thị tại đây.</p>
+                    </div>
+                </div>
+
+                <div id="empty-state-global"></div>
+            </div>
+
+            <div class="app-footer">
+                <div class="app-copyright">© Bản quyền thuộc về Bệnh Viện Thẩm Mỹ SaiGon Young — Phiên bản 1.0</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- POPUP NỘI BỘ 1: MODAL NHÂN VIÊN -->
+    <div id="modal-nhan-vien" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="title-modal-nv">Thêm Nhân Viên Mới</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-nhan-vien')">&times;</span>
+            </div>
+            <input type="hidden" id="edit-nv-id">
+            <label>Mã nhân viên:</label>
+            <input type="text" id="nv-code" placeholder="Ví dụ: NV001">
+            <label>Họ và tên:</label>
+            <input type="text" id="nv-name" placeholder="Nhập tên nhân viên">
+            <label>Phòng ban:</label>
+            <select id="nv-phongban"></select>
+            <label>Vai trò / Quyền hạn chức vụ:</label>
+            <select id="nv-vaitro"></select>
+            <label>Tài khoản đăng nhập hệ thống:</label>
+            <input type="text" id="nv-user" placeholder="Tên đăng nhập riêng của nhân viên">
+            <label>Mật khẩu đăng nhập:</label>
+            <input type="text" id="nv-pass" placeholder="Nhập mật khẩu cho nhân viên">
+            <div class="perm-item" style="margin-bottom: 14px;">
+                <input type="checkbox" id="nv-locked"> <label for="nv-locked" style="display:inline; margin-bottom:0;">🔒 Khóa tài khoản (nhân viên đã nghỉ việc - không cho đăng nhập, KHÔNG xóa dữ liệu liên quan)</label>
+            </div>
+            <button onclick="saveNhanVien()">Lưu Thông Tin</button>
+        </div>
+    </div>
+
+    <!-- POPUP NỘI BỘ 2: MODAL VAI TRÒ & PHÂN QUYỀN -->
+    <div id="modal-vai-tro" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="title-modal-vt">Thêm Vai Trò & Phân Quyền</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-vai-tro')">&times;</span>
+            </div>
+            <input type="hidden" id="edit-vt-id">
+            <label>Tên vai trò (Chức vụ):</label>
+            <input type="text" id="vt-name" placeholder="Ví dụ: Nhân viên Lễ tân, Kế toán viên">
+            <label>Mã vai trò viết liền:</label>
+            <input type="text" id="vt-code" placeholder="Ví dụ: LETAN, KETOAN, KYTHUAT">
+            
+            <!-- MA TRẬN PHÂN QUYỀN CHỌN ĐỘNG -->
+            <div class="permission-matrix">
+                <label style="font-size: 13px; color: var(--bronze);">✔ Tích chọn các phân hệ được phép truy cập:</label>
+                <div class="perm-grid">
+                    <div class="perm-item">
+                        <input type="checkbox" id="perm-dashboard-letan"> <label for="perm-dashboard-letan">📊 Lễ tân - Dashboard</label>
+                    </div>
+                    <div class="perm-item">
+                        <input type="checkbox" id="perm-crm-data"> <label for="perm-crm-data">📥 Lễ tân - Danh sách Data</label>
+                    </div>
+                    <div class="perm-item">
+                        <input type="checkbox" id="perm-le-tan"> <label for="perm-le-tan">📅 Lễ tân - Đặt lịch hẹn tư vấn</label>
+                    </div>
+                    <div class="perm-item">
+                        <input type="checkbox" id="perm-tai-kham"> <label for="perm-tai-kham">🩹 Lễ tân - Đặt lịch tái khám, thay băng, cắt chỉ</label>
+                    </div>
+                    <div class="perm-item">
+                        <input type="checkbox" id="perm-lich-phau-thuat"> <label for="perm-lich-phau-thuat">🏥 Lễ tân - Danh sách lịch phẫu thuật</label>
+                    </div>
+                    <div class="perm-item">
+                        <input type="checkbox" id="perm-crm-khach-hang"> <label for="perm-crm-khach-hang">🧑‍🤝‍🧑 CRM - Danh sách khách hàng</label>
+                    </div>
+                    <div class="perm-item">
+                        <input type="checkbox" id="perm-quan-ly-van-ban"> <label for="perm-quan-ly-van-ban">📑 HCNS - Quản Lý Văn Bản</label>
+                    </div>
+                    <div class="perm-item">
+                        <input type="checkbox" id="perm-quan-ly-cme"> <label for="perm-quan-ly-cme">🎓 HCNS - Quản Lý CME</label>
+                    </div>
+                    <div class="perm-item">
+                        <input type="checkbox" id="perm-khoa-duoc"> <label for="perm-khoa-duoc">💊 Khoa Dược - Thuốc và Tồn kho</label>
+                    </div>
+                    <div class="perm-item">
+                        <input type="checkbox" id="perm-phieu-kho"> <label for="perm-phieu-kho">📋 Khoa Dược - Phiếu xuất / nhập kho</label>
+                    </div>
+                    <div class="perm-item">
+                        <input type="checkbox" id="perm-nha-cung-cap"> <label for="perm-nha-cung-cap">🚚 Khoa Dược - Danh mục nhà cung cấp</label>
+                    </div>
+                    <div class="perm-item">
+                        <input type="checkbox" id="perm-nha-san-xuat"> <label for="perm-nha-san-xuat">🏭 Khoa Dược - Danh mục nhà sản xuất</label>
+                    </div>
+                    <div class="perm-item">
+                        <input type="checkbox" id="perm-don-vi-tinh"> <label for="perm-don-vi-tinh">📏 Khoa Dược - Danh mục đơn vị tính</label>
+                    </div>
+                    <div class="perm-item">
+                        <input type="checkbox" id="perm-ky-thuat"> <label for="perm-ky-thuat">🔧 Tab Kỹ thuật</label>
+                    </div>
+                </div>
+            </div>
+            <div class="perm-item" style="margin-bottom: 14px;">
+                <input type="checkbox" id="vt-disabled"> <label for="vt-disabled" style="display:inline; margin-bottom:0;">🚫 Vô hiệu hóa vai trò này (không còn sử dụng)</label>
+            </div>
+            <button onclick="saveVaiTro()">Lưu Vai Trò</button>
+        </div>
+    </div>
+
+    <!-- POPUP NỘI BỘ 3: MODAL PHÒNG BAN -->
+    <div id="modal-phong-ban" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="title-modal-pb">Thêm Phòng Ban Mới</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-phong-ban')">&times;</span>
+            </div>
+            <input type="hidden" id="edit-pb-id">
+            <label>Mã phòng ban:</label>
+            <input type="text" id="pb-code" placeholder="Ví dụ: HCNS, KT, KDT">
+            <label>Tên phòng ban:</label>
+            <input type="text" id="pb-name" placeholder="Ví dụ: Phòng Hành Chính Nhân Sự">
+            <label>Mô tả công việc phòng ban:</label>
+            <textarea id="pb-desc" rows="3" placeholder="Nhập chức năng chính của phòng ban..." style="width:100%; padding:11px; border:1px solid var(--gold); border-radius:6px; margin-bottom:14px; font-size:14px;"></textarea>
+            <div class="perm-item" style="margin-bottom: 14px;">
+                <input type="checkbox" id="pb-disabled"> <label for="pb-disabled" style="display:inline; margin-bottom:0;">🚫 Vô hiệu hóa phòng ban này (không còn sử dụng)</label>
+            </div>
+            <button onclick="savePhongBan()">Lưu Phòng Ban</button>
+        </div>
+    </div>
+
+    <!-- POPUP NỘI BỘ 4: MODAL DỊCH VỤ -->
+    <div id="modal-dich-vu" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="title-modal-dv">Thêm Dịch Vụ Mới</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-dich-vu')">&times;</span>
+            </div>
+            <input type="hidden" id="edit-dv-id">
+            <label>Mã dịch vụ:</label>
+            <input type="text" id="dv-code" placeholder="Ví dụ: DV001">
+            <label>Tên dịch vụ:</label>
+            <input type="text" id="dv-name" placeholder="Ví dụ: Vệ sinh công nghiệp">
+            <label>Nhóm dịch vụ:</label>
+            <input type="text" id="dv-group" placeholder="Ví dụ: Dịch vụ da liễu, Dịch vụ thẩm mỹ, Dịch vụ nha khoa...">
+            <label>Mô tả dịch vụ:</label>
+            <textarea id="dv-desc" rows="3" placeholder="Nhập mô tả chi tiết về dịch vụ..." style="width:100%; padding:11px; border:1px solid var(--gold); border-radius:6px; margin-bottom:14px; font-size:14px;"></textarea>
+            <div class="perm-item" style="margin-bottom: 14px;">
+                <input type="checkbox" id="dv-disabled"> <label for="dv-disabled" style="display:inline; margin-bottom:0;">🚫 Vô hiệu hóa dịch vụ này (không còn sử dụng)</label>
+            </div>
+            <button onclick="saveDichVu()">Lưu Dịch Vụ</button>
+        </div>
+    </div>
+
+    <!-- POPUP NỘI BỘ 5: MODAL NGUỒN KHÁCH HÀNG -->
+    <div id="modal-nguon-khach" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="title-modal-nk">Thêm Nguồn Khách Hàng Mới</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-nguon-khach')">&times;</span>
+            </div>
+            <input type="hidden" id="edit-nk-id">
+            <label>Mã nguồn khách:</label>
+            <input type="text" id="nk-code" placeholder="Ví dụ: FB, ZALO, GT">
+            <label>Tên nguồn:</label>
+            <input type="text" id="nk-name" placeholder="Ví dụ: Facebook, Zalo OA, Giới thiệu">
+            <label>Mô tả nguồn khách:</label>
+            <textarea id="nk-desc" rows="3" placeholder="Nhập mô tả chi tiết về nguồn khách hàng này..." style="width:100%; padding:11px; border:1px solid var(--gold); border-radius:6px; margin-bottom:14px; font-size:14px;"></textarea>
+            <div class="perm-item" style="margin-bottom: 14px;">
+                <input type="checkbox" id="nk-disabled"> <label for="nk-disabled" style="display:inline; margin-bottom:0;">🚫 Vô hiệu hóa nguồn khách này (không còn sử dụng)</label>
+            </div>
+            <button onclick="saveNguonKhach()">Lưu Nguồn Khách</button>
+        </div>
+    </div>
+
+    <!-- MODAL: THÊM/SỬA ĐƠN VỊ TÍNH (KHOA DƯỢC) -->
+    <div id="modal-don-vi-tinh" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="title-modal-dvt">Thêm Đơn Vị Tính Mới</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-don-vi-tinh')">&times;</span>
+            </div>
+            <input type="hidden" id="edit-dvt-id">
+            <label>Mã đơn vị tính:</label>
+            <input type="text" id="dvt-code" placeholder="Ví dụ: HOP, CHAI, VIEN">
+            <label>Tên đơn vị tính:</label>
+            <input type="text" id="dvt-name" placeholder="Ví dụ: Hộp, Chai, Viên">
+            <label>Ghi chú:</label>
+            <textarea id="dvt-note" rows="3" placeholder="Nhập ghi chú (nếu có)..." style="width:100%; padding:11px; border:1px solid var(--gold); border-radius:6px; margin-bottom:14px; font-size:14px;"></textarea>
+            <div class="perm-item" style="margin-bottom: 14px;">
+                <input type="checkbox" id="dvt-disabled"> <label for="dvt-disabled" style="display:inline; margin-bottom:0;">🚫 Vô hiệu hóa đơn vị tính này (không còn sử dụng)</label>
+            </div>
+            <button onclick="saveDonViTinh()">Lưu Đơn Vị Tính</button>
+        </div>
+    </div>
+
+    <!-- MODAL: XEM CHI TIẾT THUỐC (KHOA DƯỢC - THUỐC VÀ TỒN KHO) -->
+    <div id="modal-thuoc-detail" class="modal">
+        <div class="modal-content modal-content-wide">
+            <div class="modal-header">
+                <h3>Chi Tiết Thuốc</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-thuoc-detail')">&times;</span>
+            </div>
+            <div class="detail-tabs">
+                <button type="button" class="detail-tab-btn active" id="detail-tab-btn-th-info" onclick="switchThuocDetailTab('info')">ℹ️ Thông tin chung</button>
+                <button type="button" class="detail-tab-btn" id="detail-tab-btn-th-lo" onclick="switchThuocDetailTab('lo')">📦 Danh sách lô</button>
+                <button type="button" class="detail-tab-btn" id="detail-tab-btn-th-pxk" onclick="switchThuocDetailTab('pxk')">📤 Phiếu xuất</button>
+                <button type="button" class="detail-tab-btn" id="detail-tab-btn-th-history" onclick="switchThuocDetailTab('history')">📝 Lịch sử chỉnh sửa</button>
+            </div>
+            <div id="detail-tab-panel-th-info" class="detail-tab-panel active">
+                <div id="th-detail-info" class="detail-info-box"></div>
+            </div>
+            <div id="detail-tab-panel-th-lo" class="detail-tab-panel">
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Số Lô</th>
+                                <th>Số Lượng</th>
+                                <th>Hạn Sử Dụng</th>
+                                <th>Trạng Thái</th>
+                            </tr>
+                        </thead>
+                        <tbody id="th-detail-lo-body"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="detail-tab-panel-th-pxk" class="detail-tab-panel">
+                <div id="th-detail-pxk-list"></div>
+            </div>
+            <div id="detail-tab-panel-th-history" class="detail-tab-panel">
+                <div id="th-detail-history" class="detail-log-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: THÊM/SỬA THUỐC (KHOA DƯỢC - THUỐC VÀ TỒN KHO) -->
+    <div id="modal-thuoc" class="modal">
+        <div class="modal-content modal-content-wide">
+            <div class="modal-header">
+                <h3 id="title-modal-th">Thêm Thuốc Mới</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-thuoc')">&times;</span>
+            </div>
+            <input type="hidden" id="edit-th-id">
+            <div class="form-grid-2col">
+                <div class="form-field">
+                    <label>Mã Thuốc: <span class="required-mark">*</span></label>
+                    <input type="text" id="th-code" placeholder="Nhập mã thuốc (không trùng)">
+                </div>
+                <div class="form-field">
+                    <label>Tên Thuốc: <span class="required-mark">*</span></label>
+                    <input type="text" id="th-name" placeholder="Nhập tên thuốc">
+                </div>
+                <div class="form-field">
+                    <label>Nhóm thuốc:</label>
+                    <input type="text" id="th-group" placeholder="Ví dụ: Thuốc kháng sinh, Thuốc tim mạch...">
+                </div>
+                <div class="form-field">
+                    <label>Tên hoạt chất:</label>
+                    <input type="text" id="th-active-ingredient" placeholder="Ví dụ: Paracetamol, Amoxicillin...">
+                </div>
+                <div class="form-field">
+                    <label>Hàm lượng:</label>
+                    <input type="text" id="th-strength" placeholder="Ví dụ: 500mg, 5%, 10mg/ml...">
+                </div>
+                <div class="form-field">
+                    <label>Dạng bào chế:</label>
+                    <input type="text" id="th-dosage-form" placeholder="Ví dụ: Viên nén, Viên nang, Siro...">
+                </div>
+                <div class="form-field">
+                    <label>Quy cách đóng gói:</label>
+                    <input type="text" id="th-packaging" placeholder="Ví dụ: Hộp 10 vỉ x 10 viên">
+                </div>
+                <div class="form-field">
+                    <label>Đường dùng:</label>
+                    <select id="th-route">
+                        <option value="">-- Chọn đường dùng --</option>
+                        <option value="Uống">Uống</option>
+                        <option value="Tiêm">Tiêm</option>
+                        <option value="Bôi">Bôi</option>
+                        <option value="Nhỏ mắt">Nhỏ mắt</option>
+                        <option value="Truyền">Truyền</option>
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label>Phân nhóm dược lý:</label>
+                    <select id="th-pharmacology-group">
+                        <option value="">-- Chọn phân nhóm dược lý --</option>
+                        <option value="Nhóm tim mạch">Nhóm tim mạch</option>
+                        <option value="Nhóm kháng sinh">Nhóm kháng sinh</option>
+                        <option value="Nhóm giảm đau">Nhóm giảm đau</option>
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label>Phân loại kê đơn:</label>
+                    <select id="th-prescription-type">
+                        <option value="">-- Chọn phân loại kê đơn --</option>
+                        <option value="Thuốc kê đơn (Rx)">Thuốc kê đơn (Rx)</option>
+                        <option value="Thuốc không kê đơn (OTC)">Thuốc không kê đơn (OTC)</option>
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label>Phân loại quản lý đặc biệt:</label>
+                    <select id="th-special-control">
+                        <option value="Thường">Thường</option>
+                        <option value="Gây nghiện">Gây nghiện</option>
+                        <option value="Hướng thần">Hướng thần</option>
+                        <option value="Tiền chất">Tiền chất</option>
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label>Nhà sản xuất:</label>
+                    <input type="text" id="th-manufacturer" list="datalist-nha-san-xuat" placeholder="Gõ để tìm trong Danh mục nhà sản xuất" oninput="onThuocManufacturerChange()">
+                    <datalist id="datalist-nha-san-xuat"></datalist>
+                </div>
+                <div class="form-field">
+                    <label>Nước sản xuất:</label>
+                    <input type="text" id="th-manufacturer-country" readonly style="background:#f5f6fa; color:#667085; cursor:not-allowed;" placeholder="Tự động hiển thị theo Nhà sản xuất">
+                </div>
+                <div class="form-field">
+                    <label>Tồn kho đầu kỳ:</label>
+                    <input type="number" id="th-opening-stock" min="0" step="1" value="0" oninput="updateThuocCurrentStockPreview()">
+                </div>
+                <div class="form-field">
+                    <label>Tồn kho hiện tại:</label>
+                    <input type="number" id="th-current-stock" readonly style="background:#f5f6fa; color:#667085; cursor:not-allowed;" title="Tự động tính = Tồn đầu kỳ + số lượng nhập theo phiếu nhập kho (mặc định +0 khi chưa có phiếu nhập kho)">
+                </div>
+
+                <div class="form-field full-span" style="margin-top: 6px;">
+                    <h2 style="font-size:15px; margin-bottom:12px; padding-bottom:8px;">📐 Tỷ Lệ Quy Đổi</h2>
+                </div>
+                <div class="form-field">
+                    <label>Đơn vị nhỏ nhất (Bán lẻ):</label>
+                    <input type="text" id="th-base-unit" list="datalist-don-vi-tinh" placeholder="Gõ để tìm trong Danh mục đơn vị tính, ví dụ: Viên, Ống, Chai" oninput="updateQuyDoiLabels()">
+                    <datalist id="datalist-don-vi-tinh"></datalist>
+                </div>
+                <div class="form-field full-span">
+                    <label>Đơn vị quy đổi (trung gian → lớn nhất/Nhập kho):</label>
+                    <div id="th-quy-doi-list" style="margin-bottom: 8px;"></div>
+                    <button type="button" class="secondary" style="width:auto; margin:0 0 14px;" onclick="addQuyDoiRow()">+ Thêm đơn vị quy đổi</button>
+                </div>
+
+                <div class="form-field full-span">
+                    <div class="perm-item" style="margin-bottom: 14px;">
+                        <input type="checkbox" id="th-disabled"> <label for="th-disabled" style="display:inline; margin-bottom:0;">🚫 Vô hiệu hóa thuốc này (ngừng kinh doanh/sử dụng)</label>
+                    </div>
+                </div>
+            </div>
+            <button id="btn-save-th" onclick="saveThuoc()">Lưu Thuốc</button>
+        </div>
+    </div>
+
+    <!-- MODAL: THÊM PHIẾU NHẬP KHO (KHOA DƯỢC) -->
+    <div id="modal-phieu-nhap-kho" class="modal">
+        <div class="modal-content modal-content-wide">
+            <div class="modal-header">
+                <h3>Thêm Phiếu Nhập Kho</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-phieu-nhap-kho')">&times;</span>
+            </div>
+            <div class="form-field">
+                <label>Ngày nhập (áp dụng chung cho toàn bộ phiếu): <span class="required-mark">*</span></label>
+                <input type="date" id="pnk-import-date">
+            </div>
+
+            <h2 style="font-size:15px; margin: 18px 0 12px; padding-bottom:8px;">➕ Thêm Lô Thuốc Vào Phiếu</h2>
+            <div class="form-grid-2col">
+                <div class="form-field">
+                    <label>Mã thuốc:</label>
+                    <input type="text" id="pnk-item-code" list="datalist-thuoc-code" placeholder="Nhập hoặc chọn mã thuốc đã có" oninput="onPnkItemCodeChange()">
+                    <datalist id="datalist-thuoc-code"></datalist>
+                </div>
+                <div class="form-field">
+                    <label>Tên thuốc:</label>
+                    <input type="text" id="pnk-item-name" list="datalist-thuoc-name" placeholder="Hoặc gõ từ khóa tên thuốc để tìm" oninput="onPnkItemNameChange()">
+                    <datalist id="datalist-thuoc-name"></datalist>
+                </div>
+                <div class="form-field">
+                    <label>Số lô:</label>
+                    <input type="text" id="pnk-item-batch" placeholder="Nhập số lô để tra cứu sau này">
+                </div>
+                <div class="form-field">
+                    <label>Mã đơn hàng:</label>
+                    <input type="text" id="pnk-item-order-code" placeholder="Nhập mã đơn hàng liên quan (nếu có)">
+                </div>
+                <div class="form-field">
+                    <label>Ngày sản xuất:</label>
+                    <input type="date" id="pnk-item-mfg-date">
+                </div>
+                <div class="form-field">
+                    <label>Hạn sử dụng:</label>
+                    <input type="date" id="pnk-item-exp-date">
+                </div>
+                <div class="form-field">
+                    <label>Số lượng nhập:</label>
+                    <div style="display:flex; gap:8px;">
+                        <input type="number" id="pnk-item-qty" min="0" step="any" placeholder="Số lượng" style="flex:1; margin-bottom:0;">
+                        <select id="pnk-item-unit" style="flex:1; margin-bottom:0;">
+                            <option value="">-- Chọn thuốc trước --</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div id="pnk-item-warning" style="display:none; color:var(--danger); font-size:13px; margin-bottom:10px;"></div>
+            <button type="button" class="secondary" style="width:auto; margin: 4px 0 20px;" onclick="addPhieuNhapKhoItem()">+ Thêm Lô Vào Phiếu</button>
+
+            <h2 style="font-size:15px; margin-bottom:12px; padding-bottom:8px;">📦 Danh Sách Lô Đã Thêm Vào Phiếu (theo từng loại thuốc)</h2>
+            <div id="pnk-staging-list" style="margin-bottom:18px;">
+                <div class="empty-state" style="padding:20px;">Chưa có lô thuốc nào được thêm vào phiếu.</div>
+            </div>
+
+            <button id="btn-save-pnk" onclick="savePhieuNhapKho()">📥 Nhập Kho</button>
+        </div>
+    </div>
+
+    <!-- MODAL: XEM CHI TIẾT PHIẾU NHẬP KHO (KHOA DƯỢC) -->
+    <div id="modal-phieu-nhap-kho-detail" class="modal">
+        <div class="modal-content modal-content-wide">
+            <div class="modal-header">
+                <h3>Chi Tiết Phiếu Nhập Kho</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-phieu-nhap-kho-detail')">&times;</span>
+            </div>
+            <div id="pnk-detail-info" class="detail-info-box" style="margin-bottom:16px;"></div>
+            <div id="pnk-detail-items"></div>
+        </div>
+    </div>
+
+    <!-- MODAL: THÊM PHIẾU XUẤT KHO (KHOA DƯỢC) -->
+    <div id="modal-phieu-xuat-kho" class="modal">
+        <div class="modal-content modal-content-wide">
+            <div class="modal-header">
+                <h3>Thêm Phiếu Xuất Kho</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-phieu-xuat-kho')">&times;</span>
+            </div>
+            <div class="form-grid-2col">
+                <div class="form-field">
+                    <label>Ngày, giờ xuất: <span class="required-mark">*</span></label>
+                    <input type="datetime-local" id="pxk-export-datetime">
+                </div>
+                <div class="form-field">
+                    <label>Đơn vị lĩnh:</label>
+                    <input type="text" id="pxk-department" placeholder="Ví dụ: Khoa Ngoại trú, Phòng khám 1...">
+                </div>
+                <div class="form-field">
+                    <label>Tên khách hàng:</label>
+                    <input type="text" id="pxk-customer-name" placeholder="Nhập tên khách hàng (nếu có)">
+                </div>
+                <div class="form-field full-span">
+                    <label>Mô tả:</label>
+                    <textarea id="pxk-description" rows="2" placeholder="Nhập mô tả/lý do xuất kho..." style="width:100%; padding:11px; border:1px solid var(--gold); border-radius:6px; margin-bottom:14px; font-size:14px;"></textarea>
+                </div>
+            </div>
+
+            <h2 style="font-size:15px; margin: 18px 0 12px; padding-bottom:8px;">➕ Thêm Thuốc Vào Phiếu</h2>
+            <div class="form-grid-2col">
+                <div class="form-field">
+                    <label>Mã thuốc:</label>
+                    <input type="text" id="pxk-item-code" list="datalist-thuoc-code-xuat" placeholder="Nhập hoặc chọn mã thuốc đã có" oninput="onPxkItemCodeChange()">
+                    <datalist id="datalist-thuoc-code-xuat"></datalist>
+                </div>
+                <div class="form-field">
+                    <label>Tên thuốc:</label>
+                    <input type="text" id="pxk-item-name" list="datalist-thuoc-name-xuat" placeholder="Hoặc gõ từ khóa tên thuốc để tìm" oninput="onPxkItemNameChange()">
+                    <datalist id="datalist-thuoc-name-xuat"></datalist>
+                </div>
+                <div class="form-field">
+                    <label>Hàm lượng:</label>
+                    <input type="text" id="pxk-item-strength" readonly style="background:#f5f6fa; color:#667085; cursor:not-allowed;" placeholder="Tự động hiển thị theo thuốc đã chọn">
+                </div>
+                <div class="form-field">
+                    <label>Số lượng xuất:</label>
+                    <div style="display:flex; gap:8px;">
+                        <input type="number" id="pxk-item-qty" min="0" step="any" placeholder="Số lượng" style="flex:1; margin-bottom:0;" oninput="updatePxkFefoPreview()">
+                        <select id="pxk-item-unit" style="flex:1; margin-bottom:0;" onchange="updatePxkFefoPreview()">
+                            <option value="">-- Chọn thuốc trước --</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div id="pxk-item-warning" style="display:none; color:var(--danger); font-size:13px; margin-bottom:10px;"></div>
+            <div id="pxk-fefo-preview" style="display:none; background:var(--primary-light); border:1px solid var(--primary); border-radius:var(--radius-sm); padding:10px 14px; margin-bottom:14px; font-size:13px;"></div>
+            <button type="button" class="secondary" style="width:auto; margin: 4px 0 20px;" onclick="addPhieuXuatKhoItem()">+ Thêm Vào Phiếu</button>
+
+            <h2 style="font-size:15px; margin-bottom:12px; padding-bottom:8px;">📦 Danh Sách Thuốc Đã Thêm Vào Phiếu</h2>
+            <div id="pxk-staging-list" style="margin-bottom:18px;">
+                <div class="empty-state" style="padding:20px;">Chưa có thuốc nào được thêm vào phiếu.</div>
+            </div>
+
+            <button id="btn-save-pxk" onclick="savePhieuXuatKho()">📤 Xuất Kho</button>
+        </div>
+    </div>
+
+    <!-- MODAL: XEM CHI TIẾT PHIẾU XUẤT KHO (KHOA DƯỢC) -->
+    <div id="modal-phieu-xuat-kho-detail" class="modal">
+        <div class="modal-content modal-content-wide">
+            <div class="modal-header">
+                <h3>Chi Tiết Phiếu Xuất Kho</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-phieu-xuat-kho-detail')">&times;</span>
+            </div>
+            <div id="pxk-detail-info" class="detail-info-box" style="margin-bottom:16px;"></div>
+            <div id="pxk-detail-items"></div>
+        </div>
+    </div>
+
+    <!-- MODAL: THÊM/SỬA NHÀ CUNG CẤP (KHOA DƯỢC) -->
+    <div id="modal-nha-cung-cap" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="title-modal-ncc">Thêm Nhà Cung Cấp Mới</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-nha-cung-cap')">&times;</span>
+            </div>
+            <input type="hidden" id="edit-ncc-id">
+            <label>Mã nhà cung cấp:</label>
+            <input type="text" id="ncc-code" readonly style="background:#f5f6fa; color:#667085; cursor:not-allowed;" title="Mã tự động phát sinh, không thể chỉnh sửa">
+            <label>Tên nhà cung cấp:</label>
+            <input type="text" id="ncc-name" placeholder="Nhập tên nhà cung cấp">
+            <label>Số điện thoại:</label>
+            <input type="tel" id="ncc-phone" placeholder="Ví dụ: 0901234567">
+            <div class="perm-item" style="margin-bottom: 14px;">
+                <input type="checkbox" id="ncc-disabled"> <label for="ncc-disabled" style="display:inline; margin-bottom:0;">🚫 Vô hiệu hóa nhà cung cấp này (không còn hợp tác)</label>
+            </div>
+            <button onclick="saveNhaCungCap()">Lưu Nhà Cung Cấp</button>
+        </div>
+    </div>
+
+    <!-- MODAL: THÊM/SỬA NHÀ SẢN XUẤT (KHOA DƯỢC) -->
+    <div id="modal-nha-san-xuat" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="title-modal-nsx">Thêm Nhà Sản Xuất Mới</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-nha-san-xuat')">&times;</span>
+            </div>
+            <input type="hidden" id="edit-nsx-id">
+            <label>Mã nhà sản xuất:</label>
+            <input type="text" id="nsx-code" readonly style="background:#f5f6fa; color:#667085; cursor:not-allowed;" title="Mã tự động phát sinh, không thể chỉnh sửa">
+            <label>Tên nhà sản xuất:</label>
+            <input type="text" id="nsx-name" placeholder="Nhập tên nhà sản xuất">
+            <label>Nước sản xuất:</label>
+            <input type="text" id="nsx-country" placeholder="Ví dụ: Việt Nam, Pháp, Hàn Quốc">
+            <div class="perm-item" style="margin-bottom: 14px;">
+                <input type="checkbox" id="nsx-disabled"> <label for="nsx-disabled" style="display:inline; margin-bottom:0;">🚫 Vô hiệu hóa nhà sản xuất này (không còn hợp tác)</label>
+            </div>
+            <button onclick="saveNhaSanXuat()">Lưu Nhà Sản Xuất</button>
+        </div>
+    </div>
+
+    <!-- POPUP: MODAL LOẠI VĂN BẢN (KÈM CẤU HÌNH MẪU SỐ TỰ SINH RIÊNG CHO TỪNG LOẠI) -->
+    <!-- POPUP: MODAL NHÓM LOẠI VĂN BẢN (QUẢN LÝ THEO 2 CẤP CHA/CON) -->
+    <div id="modal-nhom-loai-van-ban" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="title-modal-nlvb">Thêm Nhóm Loại Văn Bản Mới</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-nhom-loai-van-ban')">&times;</span>
+            </div>
+            <input type="hidden" id="edit-nlvb-id">
+            <label>Mã nhóm: <span class="required-mark">*</span></label>
+            <input type="text" id="nlvb-code" placeholder="Ví dụ: HANHCHINH, CV">
+            <label>Tên nhóm: <span class="required-mark">*</span></label>
+            <input type="text" id="nlvb-name" placeholder="Ví dụ: Văn bản hành chính, Công văn...">
+            <label>Nhóm cha:</label>
+            <select id="nlvb-parent"></select>
+            <p style="font-size: 11px; color: #999; margin: -8px 0 14px; text-align:left;">*(Để trống = đây là nhóm cấp 1. Hệ thống hỗ trợ tối đa 3 cấp: Cấp 1 → Cấp 2 → Cấp 3, không cho phép sâu hơn)*</p>
+            <div class="perm-item" style="margin-bottom: 14px;">
+                <input type="checkbox" id="nlvb-disabled"> <label for="nlvb-disabled" style="display:inline; margin-bottom:0;">🚫 Vô hiệu hóa nhóm này (không còn sử dụng)</label>
+            </div>
+            <button onclick="saveNhomLoaiVanBan()">Lưu Nhóm Loại Văn Bản</button>
+        </div>
+    </div>
+
+    <div id="modal-loai-van-ban" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="title-modal-lvb">Thêm Loại Văn Bản Mới</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-loai-van-ban')">&times;</span>
+            </div>
+            <input type="hidden" id="edit-lvb-id">
+            <label>Mã loại văn bản: <span class="required-mark">*</span></label>
+            <input type="text" id="lvb-code" placeholder="Ví dụ: LVB001" oninput="updateLoaiVanBanPreview()">
+            <label>Tên loại văn bản: <span class="required-mark">*</span></label>
+            <input type="text" id="lvb-name" placeholder="Ví dụ: Công văn, Quyết định, Thông báo..." oninput="updateLoaiVanBanPreview()">
+
+            <p style="font-size: 12px; color: #888; margin: 4px 0 10px; font-weight: 600;">Cấu hình mẫu số phát sinh tự động (định dạng: 0000/Năm/Ký hiệu)</p>
+
+            <label>Ký hiệu: <span class="required-mark">*</span></label>
+            <input type="text" id="lvb-symbol" placeholder="Ví dụ: CV, QĐ, TB" style="text-transform: uppercase;" oninput="updateLoaiVanBanPreview()">
+            <label>Số chữ số đệm (0 phía trước):</label>
+            <input type="number" id="lvb-digits" min="1" max="10" value="4" placeholder="Ví dụ: 4" oninput="updateLoaiVanBanPreview()">
+            <label>Số bắt đầu đếm:</label>
+            <input type="number" id="lvb-next" min="1" value="1" placeholder="Ví dụ: 1" oninput="updateLoaiVanBanPreview()">
+
+            <div style="background:#faf8f3; border:1px dashed var(--gold); border-radius:6px; padding:10px 14px; margin-bottom:16px; font-size:13px;">
+                Xem trước số văn bản tiếp theo: <strong id="lvb-preview" style="color:var(--bronze); font-family:monospace; font-size:15px;">--</strong>
+            </div>
+
+            <div class="perm-item" style="margin-bottom: 14px;">
+                <input type="checkbox" id="lvb-disabled"> <label for="lvb-disabled" style="display:inline; margin-bottom:0;">🚫 Vô hiệu hóa loại văn bản này (không còn sử dụng)</label>
+            </div>
+            <button onclick="saveLoaiVanBan()">Lưu Loại Văn Bản</button>
+        </div>
+    </div>
+
+    <!-- POPUP: MODAL THÊM/SỬA VĂN BẢN (LAYOUT NGANG, HÌNH CHỮ NHẬT) -->
+    <div id="modal-van-ban" class="modal">
+        <div class="modal-content modal-content-wide">
+            <div class="modal-header">
+                <h3 id="title-modal-vb">Thêm Văn Bản Mới</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-van-ban')">&times;</span>
+            </div>
+            <input type="hidden" id="edit-vb-id">
+            <input type="hidden" id="edit-vb-version">
+            <input type="hidden" id="edit-vb-code-regen-for">
+            <div class="form-grid-2col">
+                <div class="form-field">
+                    <label>Loại văn bản: <span class="required-mark">*</span></label>
+                    <select id="vb-loai" onchange="onVanBanLoaiChange()"></select>
+                </div>
+                <div class="form-field">
+                    <label>Mã văn bản: <span class="required-mark">*</span></label>
+                    <input type="text" id="vb-code" placeholder="Chọn Loại văn bản để tự động tạo mã" oninput="document.getElementById('edit-vb-code-regen-for').value=''">
+                </div>
+                <div class="form-field">
+                    <label>Nhóm loại văn bản (cấp 1):</label>
+                    <select id="vb-nhom-1" onchange="onVanBanNhomLevelChange(1)"></select>
+                </div>
+                <div class="form-field" id="vb-nhom-2-wrap" style="display:none;">
+                    <label>Nhóm loại văn bản (cấp 2):</label>
+                    <select id="vb-nhom-2" onchange="onVanBanNhomLevelChange(2)"></select>
+                </div>
+                <div class="form-field" id="vb-nhom-3-wrap" style="display:none;">
+                    <label>Nhóm loại văn bản (cấp 3):</label>
+                    <select id="vb-nhom-3"></select>
+                </div>
+                <div class="form-field full-span">
+                    <label>Trích yếu: <span class="required-mark">*</span></label>
+                    <textarea id="vb-trichyeu" rows="3" placeholder="Nhập trích yếu nội dung văn bản..." style="width:100%; padding:11px; border:1px solid var(--gold); border-radius:6px; margin-bottom:14px; font-size:14px;"></textarea>
+                </div>
+                <div class="form-field">
+                    <label>Ngày ban hành:</label>
+                    <input type="date" id="vb-ngaybanhanh">
+                </div>
+                <div class="form-field">
+                    <label>Người ký / Đơn vị soạn thảo:</label>
+                    <input type="text" id="vb-nguoiky" placeholder="Ví dụ: Nguyễn Văn A / Phòng Hành chính">
+                </div>
+                <div class="form-field">
+                    <label>Khoa phòng:</label>
+                    <select id="vb-khoaphong"></select>
+                </div>
+                <div class="form-field">
+                    <label>Phiên bản:</label>
+                    <input type="text" id="vb-phienban" placeholder="Ví dụ: v1.0">
+                </div>
+                <div class="form-field">
+                    <label>Số văn bản gốc (nếu có):</label>
+                    <input type="text" id="vb-sovanbangoc" placeholder="Ví dụ: 0001/2025/QĐ-BV">
+                </div>
+                <div class="form-field full-span">
+                    <label>Ghi chú:</label>
+                    <textarea id="vb-ghichu" rows="2" placeholder="Ghi chú thêm (nếu có)..." style="width:100%; padding:11px; border:1px solid var(--gold); border-radius:6px; margin-bottom:14px; font-size:14px;"></textarea>
+                </div>
+                <div class="form-field full-span">
+                    <label>Đường dẫn lưu file:</label>
+                    <input type="text" id="vb-duongdan" placeholder="Ví dụ: D:\Văn bản\2026\CV_0001.pdf hoặc đường dẫn mạng nội bộ">
+                </div>
+                <div class="form-field full-span">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin-bottom:14px; font-weight:500;">
+                        <input type="checkbox" id="vb-daphathanh" onchange="toggleVanBanPhatHanhField()" style="width:auto; margin:0; cursor:pointer;">
+                        <span>Đã phát hành</span>
+                    </label>
+                </div>
+                <div class="form-field full-span" id="vb-phathanh-field-wrap" style="display:none;">
+                    <label>Phát hành đến đơn vị:</label>
+                    <input type="text" id="vb-phathanhden" placeholder="Ví dụ: Phòng Kế toán, Phòng Nhân sự...">
+                </div>
+                <div class="form-field full-span" id="vb-matraloidoc-field-wrap" style="display:none;">
+                    <label>Mã văn bản trả lời (nếu có):</label>
+                    <input type="text" id="vb-matraloidoc" placeholder="Ví dụ: 0002/2026/CV">
+                </div>
+            </div>
+            <button id="btn-save-vb" onclick="saveVanBan()">Lưu Văn Bản</button>
+        </div>
+    </div>
+
+    <!-- POPUP: MODAL XEM CHI TIẾT VĂN BẢN (KÈM LỊCH SỬ CẬP NHẬT) -->
+    <div id="modal-van-ban-detail" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Chi Tiết Văn Bản</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-van-ban-detail')">&times;</span>
+            </div>
+            <div id="vb-detail-info" class="detail-info-box"></div>
+            <div class="detail-tabs">
+                <button type="button" class="detail-tab-btn active" id="detail-tab-btn-vb-history" onclick="switchVbDetailTab('history')">📝 Lịch sử cập nhật</button>
+            </div>
+            <div id="detail-tab-panel-vb-history" class="detail-tab-panel active">
+                <div id="vb-detail-history" class="detail-log-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- POPUP: MODAL THÊM/SỬA CME -->
+    <div id="modal-cme" class="modal">
+        <div class="modal-content modal-content-wide">
+            <div class="modal-header">
+                <h3 id="title-modal-cme">Thêm Mới CME</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-cme')">&times;</span>
+            </div>
+            <input type="hidden" id="edit-cme-id">
+            <input type="hidden" id="edit-cme-version">
+            <div class="form-grid-2col">
+                <div class="form-field">
+                    <label>Họ và tên: <span class="required-mark">*</span></label>
+                    <input type="text" id="cme-hoten" placeholder="Nhập họ và tên">
+                </div>
+                <div class="form-field">
+                    <label>Chức danh:</label>
+                    <input type="text" id="cme-chucdanh" placeholder="Ví dụ: Bác sĩ, Điều dưỡng...">
+                </div>
+                <div class="form-field">
+                    <label>Vị trí chuyên môn:</label>
+                    <input type="text" id="cme-vitrichuyenmon" placeholder="Ví dụ: Da liễu, Phẫu thuật thẩm mỹ...">
+                </div>
+                <div class="form-field">
+                    <label>Số giấy phép / CCHN:</label>
+                    <input type="text" id="cme-sogiayphep" placeholder="Ví dụ: GPHN-00123">
+                </div>
+                <div class="form-field full-span">
+                    <label>Phạm vi hành nghề:</label>
+                    <textarea id="cme-phamvihanhnghe" rows="3" placeholder="Nhập phạm vi hành nghề..." style="width:100%; padding:11px; border:1px solid var(--gold); border-radius:6px; margin-bottom:14px; font-size:14px;"></textarea>
+                </div>
+            </div>
+            <button id="btn-save-cme" onclick="saveCme()">Lưu Thông Tin CME</button>
+        </div>
+    </div>
+
+    <!-- POPUP: MODAL XEM CHI TIẾT CME (KÈM TAB QUÁ TRÌNH ĐÀO TẠO + LỊCH SỬ CẬP NHẬT) -->
+    <div id="modal-cme-detail" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Chi Tiết CME</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-cme-detail')">&times;</span>
+            </div>
+            <input type="hidden" id="cme-detail-id">
+            <div id="cme-detail-info" class="detail-info-box"></div>
+            <div class="detail-tabs">
+                <button type="button" class="detail-tab-btn active" id="detail-tab-btn-cme-training" onclick="switchCmeDetailTab('training')">🎓 Quá trình đào tạo</button>
+                <button type="button" class="detail-tab-btn" id="detail-tab-btn-cme-history" onclick="switchCmeDetailTab('history')">📝 Lịch sử cập nhật</button>
+            </div>
+            <div id="detail-tab-panel-cme-training" class="detail-tab-panel active">
+                <div class="cme-training-stats-row">
+                    <div class="cme-training-stat">
+                        <div class="cme-training-stat-value" id="cme-detail-training-count">0</div>
+                        <div class="cme-training-stat-label">Chương trình đã học</div>
+                    </div>
+                    <div class="cme-training-stat">
+                        <div class="cme-training-stat-value" id="cme-detail-training-hours">0</div>
+                        <div class="cme-training-stat-label">Tổng số tiết</div>
+                    </div>
+                </div>
+                <button type="button" class="secondary" style="width:auto; margin-bottom:12px;" onclick="openCmeTrainingModal()">+ Thêm Quá Trình Đào Tạo</button>
+                <div id="cme-detail-training" class="cme-training-grid"></div>
+                <button type="button" class="secondary" id="btn-cme-training-viewall" style="width:auto; margin-top:10px; display:none; font-size:12px;" onclick="openCmeTrainingFullListModal()">Xem danh sách đầy đủ</button>
+            </div>
+            <div id="detail-tab-panel-cme-history" class="detail-tab-panel">
+                <div id="cme-detail-history" class="detail-log-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- POPUP: MODAL THÊM QUÁ TRÌNH ĐÀO TẠO (CHO 1 NHÂN SỰ CME - CÓ THỂ THÊM NHIỀU LẦN) -->
+    <div id="modal-cme-training" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Thêm Quá Trình Đào Tạo</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-cme-training')">&times;</span>
+            </div>
+            <label>Chương trình đào tạo: <span class="required-mark">*</span></label>
+            <input type="text" id="cme-training-chuongtrinh" placeholder="Ví dụ: Cập nhật kiến thức Da liễu 2026">
+            <label>Đơn vị đào tạo:</label>
+            <input type="text" id="cme-training-donvi" placeholder="Ví dụ: Bệnh viện Da liễu TP.HCM">
+            <label>Thời gian:</label>
+            <input type="date" id="cme-training-thoigian">
+            <label>Số tiết:</label>
+            <input type="number" id="cme-training-sotiet" min="0" placeholder="Ví dụ: 8">
+            <button id="btn-save-cme-training" onclick="saveCmeTraining()">Lưu Quá Trình Đào Tạo</button>
+        </div>
+    </div>
+
+    <!-- POPUP: XEM DANH SÁCH ĐẦY ĐỦ QUÁ TRÌNH ĐÀO TẠO (KHI CÓ HƠN 4 CHƯƠNG TRÌNH) -->
+    <div id="modal-cme-training-full" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="title-modal-cme-training-full">Toàn Bộ Quá Trình Đào Tạo</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-cme-training-full')">&times;</span>
+            </div>
+            <div id="cme-training-full-list" class="cme-training-grid" style="max-height:420px; overflow-y:auto; padding-right:4px;"></div>
+        </div>
+    </div>
+
+    <!-- POPUP: MODAL NHẬP DỮ LIỆU TỪ EXCEL (DÙNG CHUNG CHO MỌI DANH MỤC) -->
+    <div id="modal-import-excel" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="title-modal-import">Nhập Dữ Liệu Từ Excel</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-import-excel')">&times;</span>
+            </div>
+            <p style="font-size: 12.5px; color: #666; margin-bottom: 14px; text-align:left; line-height:1.5;">
+                Bước 1: Bấm <strong>"Tải File Mẫu"</strong> để tải file CSV (mở/sửa được bằng Excel) có sẵn tiêu đề cột đúng và 1 dòng ví dụ minh họa.<br>
+                Bước 2: Mở file bằng Excel, điền dữ liệu cần nhập, lưu lại (giữ định dạng .csv).<br>
+                Bước 3: Chọn file đã điền ở bên dưới và bấm "Nhập Dữ Liệu".
+            </p>
+            <button type="button" class="secondary" style="width:auto; margin-bottom:16px;" onclick="downloadImportTemplate(currentImportConfigKey)">📥 Tải File Mẫu</button>
+            <label>Chọn file CSV/Excel đã điền dữ liệu:</label>
+            <input type="file" id="import-file-input" accept=".csv,.xls,.xlsx">
+            <div id="import-result-summary" style="text-align:left; margin: 4px 0 14px;"></div>
+            <button id="btn-process-import" onclick="processImportFile()">Nhập Dữ Liệu</button>
+        </div>
+    </div>
+
+    <!-- POPUP NỘI BỘ 6: MODAL ĐẶT LỊCH HẸN -->
+    <div id="modal-lich-hen" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="title-modal-lh">Đặt Lịch Hẹn Mới</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-lich-hen')">&times;</span>
+            </div>
+            <input type="hidden" id="edit-lh-id">
+            <input type="hidden" id="edit-lh-version">
+            <label>Tên khách hàng: <span class="required-mark">*</span></label>
+            <input type="text" id="lh-customer-name" placeholder="Nhập tên khách hàng">
+            <label>Số điện thoại:</label>
+            <input type="tel" id="lh-phone" placeholder="Ví dụ: 0901234567">
+            <label>Thời gian hẹn (ngày giờ cụ thể):</label>
+            <div style="display:flex; gap:6px; margin-bottom:14px;">
+                <input type="date" id="lh-datetime-date" style="flex:2; margin-bottom:0;">
+                <select id="lh-datetime-hour" class="dt-hour-select" style="flex:1; margin-bottom:0;"></select>
+                <select id="lh-datetime-minute" class="dt-minute-select" style="flex:1; margin-bottom:0;"></select>
+            </div>
+            <label>Dịch vụ tư vấn (có thể chọn nhiều):</label>
+            <div id="lh-service-list" class="checkbox-list"></div>
+            <label>Nhân viên tư vấn:</label>
+            <select id="lh-staff"></select>
+            <label>Nguồn khách hàng:</label>
+            <select id="lh-source"></select>
+            <label>Đánh giá khả năng:</label>
+            <div style="display:flex; gap:24px; margin-bottom:14px;">
+                <div class="perm-item">
+                    <input type="checkbox" id="lh-kha-nang-tu-van" style="margin:0;">
+                    <label for="lh-kha-nang-tu-van" style="display:inline; margin-bottom:0; line-height:1;">Tư vấn</label>
+                </div>
+                <div class="perm-item">
+                    <input type="checkbox" id="lh-kha-nang-phau-thuat" style="margin:0;">
+                    <label for="lh-kha-nang-phau-thuat" style="display:inline; margin-bottom:0; line-height:1;">Phẫu thuật</label>
+                </div>
+            </div>
+            <label>Trạng thái:</label>
+            <select id="lh-status">
+                <option value="pending">Chờ xác nhận</option>
+                <option value="confirmed">Đã xác nhận lịch</option>
+                <option value="arrived">Đã đến tư vấn</option>
+                <option value="cancelled">Hủy</option>
+            </select>
+            <button id="btn-save-lich-hen" onclick="saveLichHen()">Lưu Lịch Hẹn</button>
+        </div>
+    </div>
+
+    <!-- POPUP: MODAL KẾT QUẢ TƯ VẤN (CỦA ĐẶT LỊCH HẸN TƯ VẤN) -->
+    <div id="modal-consultation-result" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Kết Quả Tư Vấn</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-consultation-result')">&times;</span>
+            </div>
+            <input type="hidden" id="cr-lh-id">
+            <input type="hidden" id="cr-lh-version">
+            <label>Kết quả tư vấn:</label>
+            <select id="cr-result">
+                <option value="">-- Chưa ghi nhận --</option>
+                <option value="khong_lam">Không làm</option>
+                <option value="lam_dich_vu">Làm dịch vụ</option>
+            </select>
+            <label>Ghi chú:</label>
+            <textarea id="cr-note" rows="4" placeholder="Nhập ghi chú thêm về kết quả tư vấn..." style="width:100%; padding:11px; border:1px solid var(--gold); border-radius:6px; margin-bottom:14px; font-size:14px;"></textarea>
+            <button id="btn-save-cr" onclick="saveConsultationResult()">Lưu Kết Quả</button>
+        </div>
+    </div>
+
+    <!-- POPUP: XEM CHI TIẾT LỊCH HẸN TƯ VẤN (DÙNG CHO CHẾ ĐỘ XEM LỊCH THÁNG) -->
+    <!-- POPUP: XEM TẤT CẢ LỊCH TRONG 1 NGÀY (DÙNG CHUNG CHO CẢ 3 MODULE LỊCH THÁNG - KHI NGÀY ĐÓ CÓ HƠN 4 LỊCH) -->
+    <div id="modal-calendar-day-list" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="calendar-day-list-title">Lịch trong ngày</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-calendar-day-list')">&times;</span>
+            </div>
+            <div id="calendar-day-list-items" style="display:flex; flex-direction:column; gap:8px; max-height:420px; overflow-y:auto;"></div>
+        </div>
+    </div>
+
+    <div id="modal-lich-hen-calendar-detail" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Chi Tiết Lịch Hẹn Tư Vấn</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-lich-hen-calendar-detail')">&times;</span>
+            </div>
+            <div id="lh-calendar-detail-info" class="detail-info-box"></div>
+            <div style="display:flex; gap:8px; flex-wrap: wrap;">
+                <button type="button" style="width:auto; flex:1;" onclick="calendarDetailEditLichHen()">✏️ Sửa</button>
+                <button type="button" class="secondary" style="width:auto; flex:1;" onclick="calendarDetailConsultResult()">📊 Kết quả tư vấn</button>
+                <button type="button" class="danger" style="width:auto; flex:1; display:none;" id="btn-calendar-detail-delete-lh" onclick="calendarDetailDeleteLichHen()">🗑️ Xóa</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- POPUP: MODAL ĐẶT LỊCH TÁI KHÁM, THAY BĂNG, CẮT CHỈ -->
+    <div id="modal-tai-kham" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="title-modal-tk">Đặt Lịch Tái Khám, Thay Băng, Cắt Chỉ Mới</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-tai-kham')">&times;</span>
+            </div>
+            <input type="hidden" id="edit-tk-id">
+            <input type="hidden" id="edit-tk-version">
+            <label>Số điện thoại: <span class="required-mark">*</span></label>
+            <input type="tel" id="tk-phone" placeholder="Ví dụ: 0901234567" onblur="checkTkPhoneDuplicate()">
+            <label>Tên khách hàng: <span class="required-mark">*</span></label>
+            <input type="text" id="tk-customer-name" placeholder="Nhập tên khách hàng">
+            <label>Thời gian hẹn (ngày giờ cụ thể):</label>
+            <div style="display:flex; gap:6px; margin-bottom:14px;">
+                <input type="date" id="tk-datetime-date" style="flex:2; margin-bottom:0;">
+                <select id="tk-datetime-hour" class="dt-hour-select" style="flex:1; margin-bottom:0;"></select>
+                <select id="tk-datetime-minute" class="dt-minute-select" style="flex:1; margin-bottom:0;"></select>
+            </div>
+            <label>Dịch vụ thực hiện (có thể chọn nhiều):</label>
+            <div id="tk-execution-service-list" class="checkbox-list">
+                <label class="checkbox-list-item">
+                    <input type="checkbox" class="tk-execution-service-checkbox" value="tai_kham"> Tái khám
+                </label>
+                <label class="checkbox-list-item">
+                    <input type="checkbox" class="tk-execution-service-checkbox" value="thay_bang"> Thay băng
+                </label>
+                <label class="checkbox-list-item">
+                    <input type="checkbox" class="tk-execution-service-checkbox" value="cat_chi"> Cắt chỉ
+                </label>
+            </div>
+            <label>Nhân viên tư vấn:</label>
+            <select id="tk-staff"></select>
+            <label>Trạng thái:</label>
+            <select id="tk-status">
+                <option value="pending">Chờ xác nhận</option>
+                <option value="confirmed">Đã xác nhận lịch</option>
+                <option value="completed">Hoàn thành</option>
+                <option value="cancelled">Hủy</option>
+            </select>
+            <button id="btn-save-tai-kham" onclick="saveTaiKham()">Lưu Lịch Hẹn</button>
+        </div>
+    </div>
+
+    <!-- POPUP: DANH SÁCH KHÁCH HÀNG TRÙNG SỐ ĐIỆN THOẠI (KHI THÊM MỚI LỊCH TÁI KHÁM, THAY BĂNG, CẮT CHỈ) -->
+    <div id="modal-tk-phone-duplicate-warning" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📞 Số Điện Thoại Đã Tồn Tại</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-tk-phone-duplicate-warning')">&times;</span>
+            </div>
+            <p style="font-size: 14px; margin-bottom: 14px; color: #444;">Số điện thoại này đã tồn tại trong Danh sách khách hàng. Chọn đúng khách hàng để lấy tên (nếu có):</p>
+            <div id="tk-phone-duplicate-list" style="display:flex; flex-direction:column; gap:8px; max-height:300px; overflow-y:auto; margin-bottom:14px;"></div>
+            <div style="display:flex; gap:10px;">
+                <button type="button" class="secondary" style="flex:1;" onclick="closeModal('modal-tk-phone-duplicate-warning')">Thoát</button>
+                <button type="button" style="flex:1;" onclick="useTkPhoneDuplicateData()">Lấy Dữ Liệu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- POPUP: XEM CHI TIẾT LỊCH TÁI KHÁM, THAY BĂNG, CẮT CHỈ (DÙNG CHO CHẾ ĐỘ XEM LỊCH THÁNG) -->
+    <div id="modal-tai-kham-calendar-detail" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Chi Tiết Lịch Tái Khám, Thay Băng, Cắt Chỉ</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-tai-kham-calendar-detail')">&times;</span>
+            </div>
+            <div id="tk-calendar-detail-info" class="detail-info-box"></div>
+            <div style="display:flex; gap:8px; flex-wrap: wrap;">
+                <button type="button" style="width:auto; flex:1;" onclick="calendarDetailEditTaiKham()">✏️ Sửa</button>
+                <button type="button" class="danger" style="width:auto; flex:1; display:none;" id="btn-calendar-detail-delete-tk" onclick="calendarDetailDeleteTaiKham()">🗑️ Xóa</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- POPUP: MODAL ĐẶT LỊCH PHẪU THUẬT -->
+    <div id="modal-lich-phau-thuat" class="modal">
+        <div class="modal-content modal-content-wide">
+            <div class="modal-header">
+                <h3 id="title-modal-pt">Đặt Lịch Phẫu Thuật Mới</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-lich-phau-thuat')">&times;</span>
+            </div>
+            <input type="hidden" id="edit-pt-id">
+            <input type="hidden" id="edit-pt-version">
+            <div class="form-grid-2col">
+                <div class="form-field">
+                    <label>Mã khách hàng: <span class="required-mark">*</span></label>
+                    <input type="text" id="pt-code" placeholder="Mã sẽ được tự động tạo, có thể chỉnh lại nếu cần">
+                </div>
+                <div class="form-field">
+                    <label>Tên khách hàng: <span class="required-mark">*</span></label>
+                    <input type="text" id="pt-customer-name" placeholder="Nhập tên khách hàng">
+                </div>
+                <div class="form-field">
+                    <label>Số điện thoại:</label>
+                    <input type="tel" id="pt-phone" placeholder="Ví dụ: 0901234567">
+                </div>
+                <div class="form-field">
+                    <label>Địa chỉ khách hàng:</label>
+                    <input type="text" id="pt-address" placeholder="Nhập địa chỉ khách hàng">
+                </div>
+                <div class="form-field">
+                    <label>Ngày sinh:</label>
+                    <input type="date" id="pt-dob">
+                </div>
+                <div class="form-field">
+                    <label>Giới tính:</label>
+                    <select id="pt-gender">
+                        <option value="">-- Chưa xác định --</option>
+                        <option value="nam">Nam</option>
+                        <option value="nu">Nữ</option>
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label>CCCD / Passport:</label>
+                    <input type="text" id="pt-cccd" placeholder="Nhập số CCCD (12 chữ số) hoặc số Passport" maxlength="20" onblur="checkPtCccdDuplicate()">
+                </div>
+                <div class="form-field">
+                    <label>Nơi cấp:</label>
+                    <input type="text" id="pt-cccd-issue-place" placeholder="Ví dụ: Cục CS QLHC về TTXH">
+                </div>
+                <div class="form-field">
+                    <label>Ngày cấp:</label>
+                    <input type="date" id="pt-cccd-issue-date">
+                </div>
+                <div class="form-field full-span">
+                    <label>Dịch vụ phẫu thuật (có thể chọn nhiều):</label>
+                    <div id="pt-service-list" class="checkbox-list"></div>
+                </div>
+                <div class="form-field full-span">
+                    <label>Mô tả dịch vụ:</label>
+                    <textarea id="pt-service-desc" rows="3" placeholder="Nhập mô tả chi tiết về dịch vụ phẫu thuật sẽ thực hiện..." style="width:100%; padding:11px; border:1px solid var(--gold); border-radius:6px; margin-bottom:14px; font-size:14px;"></textarea>
+                </div>
+                <div class="form-field full-span" style="margin-bottom: 14px;">
+                    <div class="perm-item">
+                        <input type="checkbox" id="pt-hoptac" style="margin:0;">
+                        <label for="pt-hoptac" style="display:inline; margin-bottom:0; line-height:1;">Khách hợp tác</label>
+                    </div>
+                </div>
+                <div class="form-field">
+                    <label>Thời gian phẫu thuật:</label>
+                    <div style="display:flex; gap:6px; margin-bottom:14px;">
+                        <input type="date" id="pt-datetime-date" style="flex:2; margin-bottom:0;">
+                        <select id="pt-datetime-hour" class="dt-hour-select" style="flex:1; margin-bottom:0;"></select>
+                        <select id="pt-datetime-minute" class="dt-minute-select" style="flex:1; margin-bottom:0;"></select>
+                    </div>
+                </div>
+                <div class="form-field">
+                    <label>Nhân viên tư vấn:</label>
+                    <select id="pt-staff"></select>
+                </div>
+                <div class="form-field">
+                    <label>Trạng thái:</label>
+                    <select id="pt-status">
+                        <option value="expected">Dự kiến</option>
+                        <option value="pending">Đã xác nhận - Chờ thực hiện</option>
+                        <option value="done">Đã thực hiện</option>
+                        <option value="postponed">Hoãn lịch</option>
+                        <option value="cancelled">Hủy</option>
+                    </select>
+                </div>
+            </div>
+            <p style="font-size: 11px; color: #999; margin-top: -6px; margin-bottom: 12px;">*(Khi lưu, thông tin khách hàng sẽ tự động đồng bộ sang Danh sách khách hàng ở menu CRM, trừ trạng thái. Nếu chọn trạng thái "Hủy", khách hàng tương ứng sẽ tự động bị XÓA khỏi Danh sách khách hàng)*</p>
+            <button id="btn-save-pt" onclick="saveLichPhauThuat()">Lưu Lịch Phẫu Thuật</button>
+        </div>
+    </div>
+
+    <!-- POPUP: CẢNH BÁO TRÙNG CCCD (KHI THÊM MỚI LỊCH PHẪU THUẬT) -->
+    <div id="modal-cccd-duplicate-warning" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>⚠️ CCCD/Passport Đã Tồn Tại</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-cccd-duplicate-warning')">&times;</span>
+            </div>
+            <p style="font-size: 14px; margin-bottom: 14px; color: #444;">Số CCCD/Passport này đã tồn tại trong hệ thống, thuộc về khách hàng sau:</p>
+            <div id="cccd-duplicate-info" class="detail-info-box"></div>
+            <div style="display:flex; gap:10px;">
+                <button type="button" class="secondary" style="flex:1;" onclick="closeModal('modal-cccd-duplicate-warning')">Thoát</button>
+                <button type="button" style="flex:1;" onclick="useCccdDuplicateData()">Sử Dụng Dữ Liệu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- POPUP: XÁC NHẬN CHUYỂN LỊCH PHẪU THUẬT SANG TRẠNG THÁI "HOÃN LỊCH" -->
+    <div id="modal-confirm-postpone-surgery" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>⏸️ Xác Nhận Hoãn Lịch</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="cancelPostponeSurgeryConfirm()">&times;</span>
+            </div>
+            <p style="font-size: 14px; margin-bottom: 20px; color: var(--ink-soft); line-height: 1.65;">Bạn có chắc chắn muốn chuyển lịch sang trạng thái "Hoãn"? Sau khi xác nhận, lịch này sẽ được đánh dấu là đã hoãn và không thể thay đổi sang ngày khác. Nếu bệnh nhân cần phẫu thuật vào thời điểm khác, vui lòng tạo một lịch phẫu thuật mới.</p>
+            <button type="button" onclick="confirmPostponeSurgeryAndSave()">Đồng ý</button>
+        </div>
+    </div>
+
+    <!-- POPUP: XEM CHI TIẾT LỊCH PHẪU THUẬT (DÙNG CHO CHẾ ĐỘ XEM LỊCH THÁNG) -->
+    <div id="modal-lich-phau-thuat-calendar-detail" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Chi Tiết Lịch Phẫu Thuật</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-lich-phau-thuat-calendar-detail')">&times;</span>
+            </div>
+            <div id="pt-calendar-detail-info" class="detail-info-box"></div>
+            <div style="display:flex; gap:8px; flex-wrap: wrap;">
+                <button type="button" style="width:auto; flex:1;" onclick="calendarDetailEditLichPhauThuat()">✏️ Sửa</button>
+                <button type="button" class="danger" style="width:auto; flex:1; display:none;" id="btn-calendar-detail-delete-pt" onclick="calendarDetailDeleteLichPhauThuat()">🗑️ Xóa</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- POPUP NỘI BỘ 8B: MODAL CRM - DANH SÁCH DATA (NGUỒN KHÁCH TIỀM NĂNG) -->
+    <div id="modal-crm-data" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="title-modal-cd">Thêm Data Mới</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-crm-data')">&times;</span>
+            </div>
+            <input type="hidden" id="edit-cd-id">
+            <input type="hidden" id="edit-cd-version">
+            <label>Số điện thoại:</label>
+            <input type="tel" id="cd-phone" placeholder="Ví dụ: 0901234567">
+            <label>Tên nick (nếu có):</label>
+            <input type="text" id="cd-nickname" placeholder="Ví dụ: Facebook/Zalo nickname">
+            <label>Thời gian nhận:</label>
+            <div style="display:flex; gap:6px; margin-bottom:14px;">
+                <input type="date" id="cd-received-time-date" style="flex:2; margin-bottom:0;">
+                <select id="cd-received-time-hour" class="dt-hour-select" style="flex:1; margin-bottom:0;"></select>
+                <select id="cd-received-time-minute" class="dt-minute-select" style="flex:1; margin-bottom:0;"></select>
+            </div>
+            <label>Nguồn khách hàng:</label>
+            <select id="cd-source"></select>
+            <label>Nhân viên nhận:</label>
+            <select id="cd-receiver"></select>
+            <label>Trạng thái:</label>
+            <select id="cd-status">
+                <option value="khong_lien_he">Không liên hệ được</option>
+                <option value="tham_khao">Tham khảo</option>
+                <option value="data_ao">Data ảo</option>
+                <option value="quan_tam_tra_gop">Quan tâm trả góp</option>
+                <option value="khach_tiem_nang">Khách tiềm năng</option>
+                <option value="chot_hen">Chốt hẹn</option>
+            </select>
+            <p style="font-size: 11px; color: #999; margin-top: -8px; margin-bottom: 12px;">*(Chọn "Chốt hẹn" và bấm Lưu sẽ tự động mở popup Đặt lịch hẹn với thông tin đã điền sẵn)*</p>
+            <button id="btn-save-cd" onclick="saveCrmData()">Lưu Data</button>
+        </div>
+    </div>
+
+    <!-- POPUP NỘI BỘ 8C: MODAL XEM CHI TIẾT DATA (THÔNG TIN + LỊCH SỬ CHỈNH SỬA + LỊCH SỬ TƯ VẤN) -->
+    <div id="modal-crm-data-detail" class="modal">
+        <div class="modal-content" style="max-width: 620px;">
+            <div class="modal-header">
+                <h3>Chi Tiết Data Khách Hàng</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-crm-data-detail')">&times;</span>
+            </div>
+            <input type="hidden" id="cd-detail-id">
+            <div id="cd-detail-info" class="detail-info-box"></div>
+
+            <div class="detail-tabs">
+                <button type="button" class="detail-tab-btn active" id="detail-tab-btn-edit" onclick="switchCrmDataDetailTab('edit')">📝 Lịch sử chỉnh sửa</button>
+                <button type="button" class="detail-tab-btn" id="detail-tab-btn-contact" onclick="switchCrmDataDetailTab('contact')">📞 Lịch sử tư vấn</button>
+            </div>
+
+            <div id="detail-tab-panel-edit" class="detail-tab-panel active">
+                <div id="cd-detail-edit-history" class="cd-history-grid"></div>
+            </div>
+
+            <div id="detail-tab-panel-contact" class="detail-tab-panel">
+                <div id="cd-detail-contact-history" class="cd-history-grid"></div>
+                <label>Ghi nhận lần liên hệ mới:</label>
+                <textarea id="cd-detail-new-contact-content" rows="3" placeholder="Nhập nội dung đã tư vấn trong lần liên hệ này..." style="width:100%; padding:11px; border:1px solid var(--gold); border-radius:6px; margin-bottom:10px; font-size:14px;"></textarea>
+                <button type="button" id="btn-add-contact-log" onclick="addContactLogEntry()">+ Ghi Nhận Lần Liên Hệ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- POPUP NỘI BỘ 9: MODAL CRM - DANH SÁCH KHÁCH HÀNG TỔNG (MASTER) -->
+    <div id="modal-crm-khach-hang" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="title-modal-ck">Thêm Khách Hàng Mới</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-crm-khach-hang')">&times;</span>
+            </div>
+            <input type="hidden" id="edit-ck-id">
+            <input type="hidden" id="edit-ck-version">
+            <label>Mã khách hàng:</label>
+            <input type="text" id="ck-code" placeholder="Mã sẽ được tự động tạo, có thể chỉnh lại nếu cần">
+            <label>Tên khách hàng: <span class="required-mark">*</span></label>
+            <input type="text" id="ck-customer-name" placeholder="Nhập tên khách hàng">
+            <label>Số điện thoại: <span class="required-mark">*</span></label>
+            <input type="tel" id="ck-phone" placeholder="Ví dụ: 0901234567">
+            <label>Địa chỉ:</label>
+            <input type="text" id="ck-address" placeholder="Nhập địa chỉ khách hàng">
+            <label>Ngày tháng năm sinh:</label>
+            <input type="date" id="ck-dob">
+            <label>CCCD / Passport: <span class="required-mark">*</span></label>
+            <input type="text" id="ck-cccd" placeholder="Nhập số CCCD (12 chữ số) hoặc số Passport" maxlength="20">
+            <label>Giới tính:</label>
+            <select id="ck-gender">
+                <option value="">-- Chưa xác định --</option>
+                <option value="nam">Nam</option>
+                <option value="nu">Nữ</option>
+            </select>
+            <label>Nơi cấp CCCD:</label>
+            <input type="text" id="ck-cccd-issue-place" placeholder="Ví dụ: Cục CS QLHC về TTXH">
+            <label>Ngày cấp CCCD:</label>
+            <input type="date" id="ck-cccd-issue-date">
+            <label>Mô tả dịch vụ:</label>
+            <textarea id="ck-service-desc" rows="3" placeholder="Mô tả dịch vụ đã sử dụng..." style="width:100%; padding:11px; border:1px solid var(--gold); border-radius:6px; margin-bottom:14px; font-size:14px;"></textarea>
+            <div class="perm-item" style="margin-bottom: 14px;">
+                <input type="checkbox" id="ck-hoptac" style="margin:0;">
+                <label for="ck-hoptac" style="display:inline; margin-bottom:0; line-height:1;">Khách hợp tác</label>
+            </div>
+            <label>Thời gian phẫu thuật:</label>
+            <div style="display:flex; gap:6px; margin-bottom:14px;">
+                <input type="date" id="ck-surgery-datetime-date" style="flex:2; margin-bottom:0;">
+                <select id="ck-surgery-datetime-hour" class="dt-hour-select" style="flex:1; margin-bottom:0;"></select>
+                <select id="ck-surgery-datetime-minute" class="dt-minute-select" style="flex:1; margin-bottom:0;"></select>
+            </div>
+            <label>Nhân viên tư vấn:</label>
+            <select id="ck-staff"></select>
+            <p style="font-size: 11px; color: #999; margin-top: -8px; margin-bottom: 12px;">*(Các trường Mô tả dịch vụ/Thời gian phẫu thuật/Nhân viên tư vấn thường được tự động điền khi đồng bộ từ Danh sách lịch phẫu thuật)*</p>
+            <button id="btn-save-ck" onclick="saveCrmKhachHang()">Lưu Khách Hàng</button>
+        </div>
+    </div>
+
+    <!-- POPUP: MODAL XEM CHI TIẾT KHÁCH HÀNG (THÔNG TIN + LỊCH SỬ KHÁM TƯ VẤN + LỊCH SỬ PHẪU THUẬT) -->
+    <div id="modal-crm-khach-hang-detail" class="modal">
+        <div class="modal-content" style="max-width: 680px;">
+            <div class="modal-header">
+                <h3>Chi Tiết Khách Hàng</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-crm-khach-hang-detail')">&times;</span>
+            </div>
+            <div id="ck-detail-info" class="detail-info-box"></div>
+
+            <div style="margin-bottom: 18px;">
+                <div class="detail-info-label" style="margin-bottom: 6px;">💊 Dịch Vụ Đã Dùng Tại Bệnh Viện</div>
+                <div id="ck-detail-services-used"></div>
+            </div>
+
+            <div class="detail-tabs">
+                <button type="button" class="detail-tab-btn active" id="detail-tab-btn-ck-consult" onclick="switchCkDetailTab('consult')">📅 Lịch sử khám tư vấn</button>
+                <button type="button" class="detail-tab-btn" id="detail-tab-btn-ck-taikham" onclick="switchCkDetailTab('taikham')">🩹 Lịch sử Tái khám, Thay Băng, Cắt chỉ</button>
+                <button type="button" class="detail-tab-btn" id="detail-tab-btn-ck-surgery" onclick="switchCkDetailTab('surgery')">🏥 Lịch sử phẫu thuật</button>
+            </div>
+
+            <div id="detail-tab-panel-ck-consult" class="detail-tab-panel active">
+                <div id="ck-detail-consult-history" class="ck-history-grid"></div>
+            </div>
+
+            <div id="detail-tab-panel-ck-taikham" class="detail-tab-panel">
+                <div id="ck-detail-taikham-history" class="ck-history-grid"></div>
+            </div>
+
+            <div id="detail-tab-panel-ck-surgery" class="detail-tab-panel">
+                <div id="ck-detail-surgery-history" class="ck-history-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- POPUP NỘI BỘ 7: MODAL LỌC NÂNG CAO ĐẶT LỊCH HẸN -->
+    <div id="modal-loc-lich-hen" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Lọc Nâng Cao - Đặt Lịch Hẹn</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-loc-lich-hen')">&times;</span>
+            </div>
+            <label>Tên khách hàng:</label>
+            <input type="text" id="filter-lh-name" placeholder="Nhập tên khách hàng cần lọc">
+            <label>Số điện thoại:</label>
+            <input type="text" id="filter-lh-phone" placeholder="Nhập số điện thoại cần lọc">
+            <label>Ngày đặt lịch - Từ ngày:</label>
+            <input type="date" id="filter-lh-from">
+            <label>Ngày đặt lịch - Đến ngày:</label>
+            <input type="date" id="filter-lh-to">
+            <button onclick="applyAdvancedFilter()">🔍 Tìm Kiếm</button>
+            <button class="secondary" onclick="resetAdvancedFilter()">Bỏ Lọc, Về Mặc Định</button>
+            <p style="font-size: 11px; color: #999; margin-top: 5px; text-align:left;">*(Bộ lọc chỉ áp dụng tạm thời trong phiên làm việc hiện tại. Tải lại trang sẽ tự động quay về hiển thị mặc định: Hôm nay + 2 ngày tới)*</p>
+        </div>
+    </div>
+
+    <!-- POPUP: MODAL LỌC NÂNG CAO ĐẶT LỊCH TÁI KHÁM, THAY BĂNG, CẮT CHỈ -->
+    <div id="modal-loc-tai-kham" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Lọc Nâng Cao - Đặt Lịch Tái Khám, Thay Băng, Cắt Chỉ</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-loc-tai-kham')">&times;</span>
+            </div>
+            <label>Tên khách hàng:</label>
+            <input type="text" id="filter-tk-name" placeholder="Nhập tên khách hàng cần lọc">
+            <label>Số điện thoại:</label>
+            <input type="text" id="filter-tk-phone" placeholder="Nhập số điện thoại cần lọc">
+            <label>Ngày đặt lịch - Từ ngày:</label>
+            <input type="date" id="filter-tk-from">
+            <label>Ngày đặt lịch - Đến ngày:</label>
+            <input type="date" id="filter-tk-to">
+            <button onclick="applyTaiKhamAdvancedFilter()">🔍 Tìm Kiếm</button>
+            <button class="secondary" onclick="resetTaiKhamAdvancedFilter()">Bỏ Lọc, Về Mặc Định</button>
+            <p style="font-size: 11px; color: #999; margin-top: 5px; text-align:left;">*(Bộ lọc chỉ áp dụng tạm thời trong phiên làm việc hiện tại. Tải lại trang sẽ tự động quay về hiển thị mặc định: Hôm nay + 2 ngày tới)*</p>
+        </div>
+    </div>
+
+    <!-- POPUP: MODAL LỌC NÂNG CAO DANH SÁCH LỊCH PHẪU THUẬT -->
+    <div id="modal-loc-lich-phau-thuat" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Lọc Nâng Cao - Danh Sách Lịch Phẫu Thuật</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-loc-lich-phau-thuat')">&times;</span>
+            </div>
+            <label>Tên khách hàng:</label>
+            <input type="text" id="filter-pt-name" placeholder="Nhập tên khách hàng cần lọc">
+            <label>Số điện thoại:</label>
+            <input type="text" id="filter-pt-phone" placeholder="Nhập số điện thoại cần lọc">
+            <label>Ngày phẫu thuật - Từ ngày:</label>
+            <input type="date" id="filter-pt-from">
+            <label>Ngày phẫu thuật - Đến ngày:</label>
+            <input type="date" id="filter-pt-to">
+            <button onclick="applyLichPhauThuatAdvancedFilter()">🔍 Tìm Kiếm</button>
+            <button class="secondary" onclick="resetLichPhauThuatAdvancedFilter()">Bỏ Lọc, Về Mặc Định</button>
+            <p style="font-size: 11px; color: #999; margin-top: 5px; text-align:left;">*(Bộ lọc chỉ áp dụng tạm thời trong phiên làm việc hiện tại. Tải lại trang sẽ tự động quay về hiển thị mặc định: Hôm nay + 2 ngày tới)*</p>
+        </div>
+    </div>
+
+    <!-- POPUP: MODAL LỌC NÂNG CAO QUẢN LÝ VĂN BẢN -->
+    <div id="modal-loc-van-ban" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Lọc Nâng Cao - Quản Lý Văn Bản</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-loc-van-ban')">&times;</span>
+            </div>
+            <label>Mã văn bản:</label>
+            <input type="text" id="filter-vb-code" placeholder="Nhập mã văn bản cần lọc">
+            <label>Loại văn bản:</label>
+            <select id="filter-vb-loai"></select>
+            <label>Nhóm loại văn bản (cấp 1):</label>
+            <select id="filter-vb-nhom-1" onchange="onVanBanFilterNhomLevelChange(1)"></select>
+            <div id="filter-vb-nhom-2-wrap" style="display:none;">
+                <label>Nhóm loại văn bản (cấp 2):</label>
+                <select id="filter-vb-nhom-2" onchange="onVanBanFilterNhomLevelChange(2)"></select>
+            </div>
+            <div id="filter-vb-nhom-3-wrap" style="display:none;">
+                <label>Nhóm loại văn bản (cấp 3):</label>
+                <select id="filter-vb-nhom-3"></select>
+            </div>
+            <label>Mã văn bản trả lời:</label>
+            <input type="text" id="filter-vb-matraloidoc" placeholder="Nhập mã văn bản trả lời cần lọc">
+            <label>Số văn bản gốc:</label>
+            <input type="text" id="filter-vb-sovanbangoc" placeholder="Nhập số văn bản gốc cần lọc">
+            <label>Người ký:</label>
+            <input type="text" id="filter-vb-nguoiky" placeholder="Nhập tên người ký cần lọc">
+            <label>Ngày phát hành - Từ ngày:</label>
+            <input type="date" id="filter-vb-from">
+            <label>Ngày phát hành - Đến ngày:</label>
+            <input type="date" id="filter-vb-to">
+            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:500;">
+                <input type="checkbox" id="filter-vb-daphathanh-only" style="width:auto; margin:0; cursor:pointer;">
+                <span>Chỉ hiển thị văn bản đã phát hành</span>
+            </label>
+            <button onclick="applyVanBanFilter()">🔍 Tìm Kiếm</button>
+            <button class="secondary" onclick="resetVanBanFilter()">Bỏ Lọc, Về Mặc Định</button>
+            <p style="font-size: 11px; color: #999; margin-top: 5px; text-align:left;">*(Bộ lọc chỉ áp dụng tạm thời trong phiên làm việc hiện tại. Tải lại trang sẽ tự động quay về hiển thị mặc định)*</p>
+        </div>
+    </div>
+
+    <!-- POPUP: MODAL LỌC NÂNG CAO DANH SÁCH DATA -->
+    <div id="modal-loc-crm-data" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Lọc Nâng Cao - Danh Sách Data</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size:18px;" onclick="closeModal('modal-loc-crm-data')">&times;</span>
+            </div>
+            <label>Nhân viên nhận:</label>
+            <select id="filter-cd-receiver"></select>
+            <label>Trạng thái data:</label>
+            <select id="filter-cd-status"></select>
+            <label>Ngày nhận data - Từ ngày:</label>
+            <input type="date" id="filter-cd-from">
+            <label>Ngày nhận data - Đến ngày:</label>
+            <input type="date" id="filter-cd-to">
+            <button onclick="applyCrmDataFilter()">🔍 Tìm Kiếm</button>
+            <button class="secondary" onclick="resetCrmDataFilter()">Bỏ Lọc, Về Mặc Định</button>
+            <p style="font-size: 11px; color: #999; margin-top: 5px; text-align:left;">*(Bộ lọc chỉ áp dụng tạm thời trong phiên làm việc hiện tại. Tải lại trang sẽ tự động quay về hiển thị mặc định)*</p>
+        </div>
+    </div>
+
+    <!-- POPUP 4: ĐỔI MẬT KHẨU ADMIN -->
+    <div id="password-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Thay Đổi Mật Khẩu Hệ Thống Admin</h3>
+                <span style="cursor:pointer; font-weight:bold; font-size: 18px;" onclick="closeModal('password-modal')">&times;</span>
+            </div>
+            <label>Mật khẩu hiện tại:</label>
+            <input type="password" id="old-pass" placeholder="Nhập mật khẩu hiện tại">
+            <label>Mật khẩu mới:</label>
+            <input type="password" id="new-pass" placeholder="Nhập mật khẩu mới">
+            <label>Xác nhận mật khẩu mới:</label>
+            <input type="password" id="confirm-new-pass" placeholder="Nhập lại mật khẩu mới">
+            <button onclick="changePassword()">Cập Nhật Mật Khẩu</button>
+        </div>
+    </div>
+
+    <!-- VÙNG IN ẨN DÙNG CHUNG CHO MỌI LOẠI PHIẾU (Nhập kho/Xuất kho) - xem CSS @media print trong styles.css -->
+    <div id="print-area"></div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
