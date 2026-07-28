@@ -2580,7 +2580,7 @@
             const dosageForm = document.getElementById("th-dosage-form").value.trim();
             const packaging = document.getElementById("th-packaging").value.trim();
             const route = document.getElementById("th-route").value;
-            const pharmacologyGroup = document.getElementById("th-pharmacology-group").value;
+            const pharmacologyGroup = document.getElementById("th-pharmacology-group").value.trim();
             const prescriptionType = document.getElementById("th-prescription-type").value;
             const specialControl = document.getElementById("th-special-control").value;
             const manufacturer = document.getElementById("th-manufacturer").value.trim();
@@ -2909,7 +2909,7 @@
                 const soLoaiThuoc = new Set(x.items.map(i => i.medicineCode)).size;
                 return `
                 <tr>
-                    <td><strong>${escapeHtml(x.code)}</strong></td>
+                    <td><strong>${escapeHtml(x.code)}</strong>${x.cancelled ? ' <span class="appointment-status-badge" style="background:#f5f5f5; color:#888; border-color:#ccc; font-size:10px;">🚫 Đã hủy</span>' : ''}</td>
                     <td>${formatDateVN(x.importDate)}</td>
                     <td>${soLoaiThuoc} loại thuốc (${x.items.length} lô)</td>
                     <td>${escapeHtml(x.createdBy || '')}</td>
@@ -2920,6 +2920,7 @@
                                 <div class="action-dropdown-menu">
                                     <button type="button" onclick="openPhieuNhapKhoDetailModal('${x.id}')">👁️ Xem chi tiết</button>
                                     <button type="button" onclick="printPhieuNhapKho('${x.id}')">🖨️ In phiếu</button>
+                                    ${!x.cancelled ? `<button type="button" class="danger-option" onclick="huyPhieuNhapKho('${x.id}')">🚫 Hủy phiếu</button>` : ''}
                                     ${isAdminUser() ? `<button type="button" class="danger-option" onclick="deletePhieuNhapKho('${x.id}')">🗑️ Xóa</button>` : ''}
                                 </div>
                             </div>
@@ -2931,38 +2932,32 @@
             renderPaginationButtons(document.getElementById("btn-pnk"), totalPages);
         }
 
-        // Xóa Phiếu Nhập Kho (CHỈ Admin) - HOÀN TÁC chính xác mọi thay đổi đã áp dụng lúc nhập kho: trừ lại
-        // đúng số lượng đã cộng (convertedQty đã lưu sẵn trên từng dòng) khỏi Tồn kho hiện tại và khỏi đúng
-        // Lô tương ứng. Nếu việc hoàn tác khiến tồn kho hoặc lô nào bị ÂM (nghĩa là số thuốc/lô đó đã được
-        // xuất kho đi nơi khác sau khi phiếu này được tạo) thì CHẶN xóa và báo rõ lý do - tránh làm sai lệch
-        // dữ liệu tồn kho thực tế.
-        function deletePhieuNhapKho(id) {
-            const pnk = appData.phieunhapkho.find(x => x.id === id);
-            if (!pnk) { alert("Phiếu nhập kho này không còn tồn tại."); return; }
-            if (!confirm(`Bạn có chắc chắn muốn XÓA phiếu nhập kho "${pnk.code}"?\n\nThao tác này sẽ hoàn tác lại số lượng đã cộng vào tồn kho và các lô liên quan.`)) return;
-
+        // Kiểm tra + hoàn tác tồn kho/lô cho 1 phiếu nhập kho (dùng CHUNG cho cả Hủy phiếu và Xóa phiếu, vì
+        // 2 thao tác này giống hệt nhau về mặt "hoàn tác dữ liệu tồn kho", chỉ khác ở chỗ Hủy thì GIỮ LẠI
+        // dòng dữ liệu phiếu (đánh dấu trạng thái đã hủy), còn Xóa thì XÓA HẲN dòng dữ liệu đó).
+        // Trả về null nếu hoàn tác thành công, hoặc trả về CHUỖI THÔNG BÁO LỖI nếu không thể hoàn tác an toàn.
+        function reversePhieuNhapKhoStock(pnk, actionLabel) {
             // Bước 1: kiểm tra TRƯỚC xem có thể hoàn tác an toàn cho TẤT CẢ các dòng hay không
             for (const item of pnk.items) {
                 const medicine = appData.thuoc.find(t => t.id === item.medicineId);
                 const convertedQty = item.convertedQty ?? convertThuocQuantityToBaseUnit(medicine || {}, item.quantity, item.unit) ?? 0;
                 if (medicine && (medicine.currentStock || 0) - convertedQty < -0.0001) {
-                    return alert(`Không thể xóa phiếu này vì Tồn kho hiện tại của thuốc "${item.medicineCode}" không đủ để hoàn tác (có thể đã được xuất kho sau khi nhập phiếu này). Vui lòng kiểm tra lại.`);
+                    return `Không thể ${actionLabel} phiếu này vì Tồn kho hiện tại của thuốc "${item.medicineCode}" không đủ để hoàn tác (có thể đã được xuất kho sau khi nhập phiếu này). Vui lòng kiểm tra lại.`;
                 }
                 const lo = appData.thuoclo.find(l => l.medicineId === item.medicineId && l.batchNumber === item.batchNumber);
                 if ((lo ? (lo.quantity || 0) : 0) - convertedQty < -0.0001) {
-                    return alert(`Không thể xóa phiếu này vì Lô "${item.batchNumber}" của thuốc "${item.medicineCode}" không còn đủ số lượng để hoàn tác (có thể đã được xuất kho từ lô này sau đó). Vui lòng kiểm tra lại.`);
+                    return `Không thể ${actionLabel} phiếu này vì Lô "${item.batchNumber}" của thuốc "${item.medicineCode}" không còn đủ số lượng để hoàn tác (có thể đã được xuất kho từ lô này sau đó). Vui lòng kiểm tra lại.`;
                 }
             }
 
             // Bước 2: hoàn tác thật sự
             const identityName = getCurrentSessionIdentity().name;
+            const actionText = actionLabel === 'hủy' ? 'Hủy phiếu nhập kho' : 'Xóa phiếu nhập kho';
             pnk.items.forEach(item => {
                 const medicine = appData.thuoc.find(t => t.id === item.medicineId);
                 const convertedQty = item.convertedQty ?? 0;
                 const lo = appData.thuoclo.find(l => l.medicineId === item.medicineId && l.batchNumber === item.batchNumber);
-                if (lo) {
-                    lo.quantity = (lo.quantity || 0) - convertedQty;
-                }
+                if (lo) lo.quantity = (lo.quantity || 0) - convertedQty;
                 if (medicine) {
                     const oldStock = medicine.currentStock || 0;
                     medicine.currentStock = oldStock - convertedQty;
@@ -2970,12 +2965,48 @@
                     medicine.history.push({
                         datetime: new Date().toISOString(),
                         changedBy: identityName,
-                        changes: [`Xóa phiếu nhập kho ${pnk.code}: -${convertedQty} ${medicine.baseUnit || ''} (Tồn kho: ${oldStock} → ${medicine.currentStock})`]
+                        changes: [`${actionText} ${pnk.code}: -${convertedQty} ${medicine.baseUnit || ''} (Tồn kho: ${oldStock} → ${medicine.currentStock})`]
                     });
                 }
             });
-            // Dọn các lô đã về 0 (hoặc âm do sai số làm tròn) để không hiện lô rỗng trong Danh sách lô
             appData.thuoclo = appData.thuoclo.filter(l => (l.quantity || 0) > 0.0001);
+            return null;
+        }
+
+        // Hủy Phiếu Nhập Kho: hoàn tác tồn kho/lô GIỐNG HỆT xóa, nhưng GIỮ LẠI dòng dữ liệu của phiếu trong
+        // danh sách với trạng thái "Đã hủy" (không xóa hẳn), để vẫn tra cứu/đối chiếu lại được về sau.
+        function huyPhieuNhapKho(id) {
+            const pnk = appData.phieunhapkho.find(x => x.id === id);
+            if (!pnk) { alert("Phiếu nhập kho này không còn tồn tại."); return; }
+            if (pnk.cancelled) { alert("Phiếu này đã được hủy trước đó rồi."); return; }
+            if (!confirm(`Bạn có chắc chắn muốn HỦY phiếu nhập kho "${pnk.code}"?\n\nSố lượng đã cộng vào tồn kho sẽ được hoàn tác lại. Phiếu vẫn hiển thị trong danh sách với trạng thái "Đã hủy".`)) return;
+
+            const err = reversePhieuNhapKhoStock(pnk, 'hủy');
+            if (err) return alert(err);
+
+            pnk.cancelled = true;
+            pnk.cancelledBy = getCurrentSessionIdentity().name;
+            pnk.cancelledAt = new Date().toISOString();
+            logActivity('action', 'Phiếu nhập kho', 'Hủy', `${pnk.code} - ${pnk.items.length} lô thuốc`);
+            saveToLocalStorage();
+            renderPhieuNhapKhoTable();
+        }
+
+        // Xóa Phiếu Nhập Kho (CHỈ Admin) - nếu phiếu CHƯA hủy thì hoàn tác tồn kho/lô rồi mới xóa hẳn; nếu
+        // phiếu ĐÃ hủy từ trước (tồn kho đã hoàn tác lúc hủy rồi) thì chỉ xóa dòng dữ liệu, KHÔNG hoàn tác lại
+        // lần 2 (tránh trừ/cộng nhầm 2 lần liên tiếp cho cùng 1 phiếu).
+        function deletePhieuNhapKho(id) {
+            const pnk = appData.phieunhapkho.find(x => x.id === id);
+            if (!pnk) { alert("Phiếu nhập kho này không còn tồn tại."); return; }
+            const confirmMsg = pnk.cancelled
+                ? `Bạn có chắc chắn muốn XÓA VĨNH VIỄN phiếu nhập kho "${pnk.code}" đã hủy này khỏi danh sách?\n\nPhiếu này đã hủy từ trước nên KHÔNG ảnh hưởng gì thêm tới tồn kho.`
+                : `Bạn có chắc chắn muốn XÓA phiếu nhập kho "${pnk.code}"?\n\nThao tác này sẽ hoàn tác lại số lượng đã cộng vào tồn kho và các lô liên quan.`;
+            if (!confirm(confirmMsg)) return;
+
+            if (!pnk.cancelled) {
+                const err = reversePhieuNhapKhoStock(pnk, 'xóa');
+                if (err) return alert(err);
+            }
 
             appData.phieunhapkho = appData.phieunhapkho.filter(x => x.id !== id);
             logActivity('action', 'Phiếu nhập kho', 'Xóa', `${pnk.code} - ${pnk.items.length} lô thuốc`);
@@ -3333,7 +3364,7 @@
                 const soLoaiThuoc = new Set(x.items.map(i => i.medicineCode)).size;
                 return `
                 <tr>
-                    <td><strong>${escapeHtml(x.code)}</strong></td>
+                    <td><strong>${escapeHtml(x.code)}</strong>${x.cancelled ? ' <span class="appointment-status-badge" style="background:#f5f5f5; color:#888; border-color:#ccc; font-size:10px;">🚫 Đã hủy</span>' : ''}</td>
                     <td>${formatDatetimeVN(x.exportDatetime)}</td>
                     <td>${x.department ? escapeHtml(x.department) : '<span style="color:#ccc; font-style:italic">-</span>'}</td>
                     <td>${x.customerName ? escapeHtml(x.customerName) : '<span style="color:#ccc; font-style:italic">-</span>'}</td>
@@ -3345,6 +3376,7 @@
                                 <div class="action-dropdown-menu">
                                     <button type="button" onclick="openPhieuXuatKhoDetailModal('${x.id}')">👁️ Xem chi tiết</button>
                                     <button type="button" onclick="printPhieuXuatKho('${x.id}')">🖨️ In phiếu</button>
+                                    ${!x.cancelled ? `<button type="button" class="danger-option" onclick="huyPhieuXuatKho('${x.id}')">🚫 Hủy phiếu</button>` : ''}
                                 </div>
                             </div>
                         </div>
@@ -3353,6 +3385,47 @@
             }).join('');
 
             renderPaginationButtons(document.getElementById("btn-pxk"), totalPages);
+        }
+
+        // Hủy Phiếu Xuất Kho: hoàn TRẢ LẠI đúng số lượng đã trừ vào từng Lô cụ thể (theo allocations đã lưu
+        // sẵn trên từng dòng) + cộng lại vào Tồn kho hiện tại tổng, ghi lịch sử, rồi GIỮ LẠI dòng dữ liệu
+        // của phiếu trong danh sách với trạng thái "Đã hủy" (không xóa hẳn). Nếu Lô đã bị dọn khỏi kho từ
+        // trước (do dùng hết về 0 sau lần xuất này) thì tự tạo lại đúng lô đó với số lượng được hoàn trả.
+        function huyPhieuXuatKho(id) {
+            const pxk = appData.phieuxuatkho.find(x => x.id === id);
+            if (!pxk) { alert("Phiếu xuất kho này không còn tồn tại."); return; }
+            if (pxk.cancelled) { alert("Phiếu này đã được hủy trước đó rồi."); return; }
+            if (!confirm(`Bạn có chắc chắn muốn HỦY phiếu xuất kho "${pxk.code}"?\n\nSố lượng đã xuất sẽ được hoàn trả lại đúng các lô đã bị trừ trước đó và vào tồn kho. Phiếu vẫn hiển thị trong danh sách với trạng thái "Đã hủy".`)) return;
+
+            const identityName = getCurrentSessionIdentity().name;
+            pxk.items.forEach(item => {
+                const medicine = appData.thuoc.find(t => t.id === item.medicineId);
+                (item.allocations || []).forEach(a => {
+                    let lo = appData.thuoclo.find(l => l.id === a.batchId);
+                    if (lo) {
+                        lo.quantity = (lo.quantity || 0) + a.qtyDeducted;
+                    } else {
+                        appData.thuoclo.push({ id: a.batchId, medicineId: item.medicineId, batchNumber: a.batchNumber, expiryDate: a.expiryDate, quantity: a.qtyDeducted });
+                    }
+                });
+                if (medicine) {
+                    const oldStock = medicine.currentStock || 0;
+                    medicine.currentStock = oldStock + item.convertedQty;
+                    if (!medicine.history) medicine.history = [];
+                    medicine.history.push({
+                        datetime: new Date().toISOString(),
+                        changedBy: identityName,
+                        changes: [`Hủy phiếu xuất kho ${pxk.code}: +${item.convertedQty} ${medicine.baseUnit || ''} (Tồn kho: ${oldStock} → ${medicine.currentStock})`]
+                    });
+                }
+            });
+
+            pxk.cancelled = true;
+            pxk.cancelledBy = identityName;
+            pxk.cancelledAt = new Date().toISOString();
+            logActivity('action', 'Phiếu xuất kho', 'Hủy', `${pxk.code} - ${pxk.items.length} loại thuốc`);
+            saveToLocalStorage();
+            renderPhieuXuatKhoTable();
         }
 
         function openPhieuXuatKhoDetailModal(id) {
@@ -3431,12 +3504,13 @@
                 return `
                 <div style="border:1px solid var(--border-color); border-radius:var(--radius-sm); padding:10px 14px; margin-bottom:10px; background:#fafbfd;">
                     <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
-                        <span style="font-weight:700; color:var(--dark-brown);">${escapeHtml(pxk.code)}</span>
+                        <span style="font-weight:700; color:var(--dark-brown);">${escapeHtml(pxk.code)}${pxk.cancelled ? ' <span class="appointment-status-badge" style="background:#f5f5f5; color:#888; border-color:#ccc; font-size:10px;">🚫 Đã hủy</span>' : ''}</span>
                         <span style="font-size:12.5px; color:var(--gray-text);">${formatDatetimeVN(pxk.exportDatetime)}</span>
                     </div>
-                    <div style="font-size:12.5px; color:var(--gray-text);">
+                    <div style="font-size:12.5px; color:var(--gray-text);${pxk.cancelled ? ' text-decoration:line-through;' : ''}">
                         ${relevantItems.map(it => (it.allocations || []).map(a => `• Lô ${escapeHtml(a.batchNumber)}: -${a.qtyDeducted} ${escapeHtml(it.baseUnit || '')}`).join('<br>')).join('<br>')}
                     </div>
+                    ${pxk.cancelled ? '<div style="font-size:11.5px; color:var(--danger); font-style:italic; margin-top:4px;">Đã hủy - số lượng này đã được hoàn trả lại kho</div>' : ''}
                 </div>`;
             }).join('');
         }
